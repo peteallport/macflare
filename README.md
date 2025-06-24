@@ -2,7 +2,9 @@
 Power tools for Cloudflare natively on macOS.
 
 ## ❤️ Support macflare
-Consider downloading from the App Store to support new features, enhancements, and for automatic updates (coming soon).
+- [ ] **COMING SOON**: Download from the App Store to support new features, enhancements, and for automatic updates.
+- [x] Know a really cool company hiring? [I'm a really cool guy](https://peteallport.com).
+- [x] Have deep pockets? Consider [sponsoring macflare](https://github.com/sponsors/peteallport).
 
 ## 📄 License
 
