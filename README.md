@@ -1,7 +1,18 @@
 # macflare
+
 Power tools for Cloudflare natively on macOS.
 
+## 🚀 Getting Started
+
+1. Clone the repository
+2. Open `macflare.xcodeproj` in Xcode
+3. Select your team in Signing & Capabilities
+4. Build and run!
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed setup instructions.
+
 ## ❤️ Support macflare
+
 - [ ] **COMING SOON**: Download from the App Store to support new features, enhancements, and for automatic updates.
 - [x] Know a really cool company hiring? [I'm a really cool guy](https://peteallport.com).
 - [x] Have deep pockets? Consider [sponsoring macflare](https://github.com/sponsors/peteallport).
