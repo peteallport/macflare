@@ -1,0 +1,5 @@
+// Development.example.xcconfig - Copy this to Development.xcconfig and customize
+// Replace these values with your own development team and bundle identifier
+DEVELOPMENT_TEAM = YOUR_TEAM_ID_HERE
+PRODUCT_BUNDLE_IDENTIFIER_BASE = com.yourcompany
+CODE_SIGN_STYLE = Automatic 
