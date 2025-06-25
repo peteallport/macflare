@@ -65,6 +65,3 @@ fastlane/test_output
 *.p12
 *.xcuserdatad
 *.xcscmblueprint
-
-# Personal development configuration
-macflare/Config/Development.xcconfig
