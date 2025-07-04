@@ -12,9 +12,10 @@
 	<array>
 		<string>CloudKit</string>
 	</array>
-	<key>com.apple.security.app-sandbox</key>
-	<true/>
-	<key>com.apple.security.files.user-selected.read-only</key>
-	<true/>
+	<!-- App Sandbox disabled for hot reloading in Debug builds -->
+	<!--<key>com.apple.security.app-sandbox</key>
+	<true/>-->
+	<!--<key>com.apple.security.files.user-selected.read-only</key>
+	<true/>-->
 </dict>
 </plist>

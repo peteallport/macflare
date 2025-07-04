@@ -8,6 +8,9 @@
 import SwiftUI
 import SwiftData
 
+// Global import for HotSwiftUI hot reloading - available throughout the app
+@_exported import HotSwiftUI
+
 @main
 struct macflareApp: App {
     var sharedModelContainer: ModelContainer = {
