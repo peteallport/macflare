@@ -8,6 +8,7 @@
 import SwiftData
 import SwiftUI
 import AppKit
+@_exported import Inject
 
 @main
 struct macflareApp: App {

@@ -7,6 +7,7 @@
 
 import SwiftUI
 import AppKit
+import Inject
 
 struct VisualEffectView: NSViewRepresentable {
     func makeNSView(context: Context) -> NSVisualEffectView {
@@ -20,6 +21,8 @@ struct VisualEffectView: NSViewRepresentable {
 }
 
 struct WelcomeView: View {
+    @ObserveInjection var inject
+    
     var body: some View {
         VStack(spacing: 40) {
             Spacer()
@@ -66,6 +69,7 @@ struct WelcomeView: View {
         .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
 #endif
+        .enableInjection()
     }
 }
 
