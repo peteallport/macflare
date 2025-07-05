@@ -20,6 +20,8 @@ struct VisualEffectView: NSViewRepresentable {
 }
 
 struct WelcomeView: View {
+    @Inject.ObserveInjection var inject
+    
     var body: some View {
         VStack(spacing: 40) {
             Spacer()
@@ -66,6 +68,8 @@ struct WelcomeView: View {
         .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
 #endif
+        .enableInjection()
+
     }
 }
 

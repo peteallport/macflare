@@ -8,6 +8,7 @@
 import SwiftData
 import SwiftUI
 import AppKit
+@_exported import Inject
 
 @main
 struct macflareApp: App {
@@ -27,7 +28,7 @@ struct macflareApp: App {
     var body: some Scene {
         WindowGroup {
             WelcomeView()
-                .background(.clear)
+                .background(Color.clear)
                 .onAppear {
                     configureWindow()
                 }
@@ -52,3 +53,4 @@ struct macflareApp: App {
         }
     }
 }
+

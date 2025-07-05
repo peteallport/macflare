@@ -17,6 +17,27 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed setup instructions.
 - [x] Know a really cool company hiring? [I'm a really cool guy](https://peteallport.com).
 - [x] Have deep pockets? Consider [sponsoring macflare](https://github.com/sponsors/peteallport).
 
+## 🔥 Hot Reload Development
+
+macflare supports blazing-fast hot reload for SwiftUI development using the [Inject](https://github.com/krzysztofzablocki/Inject) package.
+
+### ✅ Quick Setup
+
+1. **Download InjectionIII.app** from [GitHub Releases](https://github.com/johnno1962/InjectionIII/releases)
+2. **Launch InjectionIII.app** and open your `macflare.xcodeproj`
+3. **Run your app** in Xcode (Debug mode)
+4. **Make changes** to any SwiftUI view and save (⌘+S)
+5. **Watch changes appear instantly** in your running app! 🎉
+
+### 🛠️ Configuration Status
+
+✅ **Inject package v1.5.2** - Already integrated and linked  
+✅ **Build settings** - `-Xlinker -interposable` and `EMIT_FRONTEND_COMMAND_LINES = YES` configured  
+✅ **Entitlements** - Hot reload permissions added  
+✅ **SwiftUI integration** - Views configured with `@Inject.ObserveInjection` and `.enableInjection()`
+
+Save and watch it update instantly!
+
 ## 📄 License
 
 This project is licensed under [CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/).
