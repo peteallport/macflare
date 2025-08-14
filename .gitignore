@@ -68,3 +68,9 @@ fastlane/test_output
 
 # Personal development configuration
 macflare/Config/Development.xcconfig
+
+# macOS
+.DS_Store
+
+# Xcode derived data
+DerivedData/
