@@ -23,22 +23,6 @@ struct ContentView: View {
                     }
                 }
                 .onDelete(perform: deleteItems)
-    @MainActor
-    private func addItem() {
-        withAnimation {
-            let newItem = Item(timestamp: Date())
-            modelContext.insert(newItem)
-        }
-    }
-
-    @MainActor
-    private func deleteItems(offsets: IndexSet) {
-        withAnimation {
-            for index in offsets {
-                modelContext.delete(items[index])
-            }
-        }
-    }
             }
 #if os(macOS)
             .navigationSplitViewColumnWidth(min: 180, ideal: 200)
