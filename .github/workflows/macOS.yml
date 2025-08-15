@@ -9,7 +9,7 @@ on:
 jobs:
   build:
     name: Build and Test default scheme on macOS
-    runs-on: macos-14
+    runs-on: macos-latest
 
     steps:
       - name: Checkout
