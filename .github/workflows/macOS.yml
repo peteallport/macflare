@@ -9,17 +9,20 @@ on:
 jobs:
   build:
     name: Build and Test default scheme on macOS
-    runs-on: macos-latest
+    runs-on: macos-14
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Check Xcode Version
+        run: |
+          xcodebuild -version
+          xcode-select -p
       - name: Set Default Scheme
         run: |
-          scheme_list=$(xcodebuild -list -json | tr -d "\n")
-          default=$(echo $scheme_list | python3 -c "import sys, json; data=json.load(sys.stdin); print(data['project']['targets'][0])")
-          echo $default | cat >default
-          echo Using default scheme: $default
+          # Use the known scheme name directly
+          echo "macflare" > default
+          echo Using default scheme: macflare
       - name: Build and Test
         env:
           scheme: ${{ 'default' }}
