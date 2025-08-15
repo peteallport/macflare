@@ -10,9 +10,13 @@ Power tools for Cloudflare natively on macOS.
 
 ## 🧑‍💻 Local development
 
-- Open `macflare.xcodeproj` in Xcode 16.4+
-- Copy `macflare/Config/Development.example.xcconfig` to `macflare/Config/Development.xcconfig` and set your values (see `macflare/Config/README.md`).
-- To build from CLI without signing: `xcodebuild -project macflare.xcodeproj -scheme macflare -destination 'platform=macOS' CODE_SIGNING_ALLOWED=NO build`
+- Open `macflare.xcodeproj` in Xcode 16.4 or later.
+- Copy [macflare/Config/Development.example.xcconfig](macflare/Config/Development.example.xcconfig) to [macflare/Config/Development.xcconfig](macflare/Config/Development.xcconfig), then set your values (see [macflare/Config/README.md](macflare/Config/README.md)).
+- To build from the CLI without code signing:  
+  `xcodebuild -project macflare.xcodeproj -scheme macflare -destination 'platform=macOS' CODE_SIGNING_ALLOWED=NO build`
+- To run tests from the CLI:  
+  `xcodebuild -project macflare.xcodeproj -scheme macflare -destination 'platform=macOS' CODE_SIGNING_ALLOWED=NO test`
+- See [CONTRIBUTING.md](CONTRIBUTING.md) for development standards and pull-request guidelines.
 
 ## 📄 License
 
