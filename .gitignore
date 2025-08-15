@@ -68,3 +68,78 @@ fastlane/test_output
 
 # Personal development configuration
 macflare/Config/Development.xcconfig
+
+# Xcode derived data
+DerivedData/
+
+# Build products
+build/
+*.app
+*.ipa
+*.dSYM
+*.dSYM.zip
+
+# Xcode build artifacts
+*.xcarchive
+*.xcuserstate
+*.xcuserdatad/
+*.xcscmblueprint
+
+# Swift Package Manager
+.build/
+Packages/
+Package.pins
+Package.resolved
+*.xcodeproj/project.xcworkspace/xcshareddata/
+*.xcodeproj/xcuserdata/
+
+# Xcode generated files
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Playgrounds
+timeline.xctimeline
+playground.xcworkspace
+
+# Code coverage
+*.coverage.txt
+*.gcda
+*.gcno
+
+# Profiling
+*.profdata
+
+# Temporary files
+*.tmp
+*.temp
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+*.log.*
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Backup files
+*.bak
+*.backup
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db

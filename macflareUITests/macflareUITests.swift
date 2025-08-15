@@ -28,7 +28,11 @@ final class macflareUITests: XCTestCase {
         let app = XCUIApplication()
         app.launch()
 
-        // Use XCTAssert and related functions to verify your tests produce the correct results.
+        let addButton = app.buttons["addItemButton"]
+        XCTAssertTrue(addButton.waitForExistence(timeout: 2))
+        addButton.tap()
+
+        // Basic smoke check passed if no crash occurs on tap
     }
 
     @MainActor
