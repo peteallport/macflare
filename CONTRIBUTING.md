@@ -33,11 +33,11 @@
 
 4. **🔥 Hot Reload Development**: macflare supports blazing-fast hot reload for SwiftUI development outside of Xcode in editors like Cursor or VS Code using the [Inject](https://github.com/krzysztofzablocki/Inject) package.
 
-- **Download InjectionIII.app** from [GitHub Releases](https://github.com/johnno1962/InjectionIII/releases)
-- **Launch InjectionIII.app** and open your `macflare.xcodeproj`
-- **Run your app** in Xcode (Debug mode)
-- **Make changes** to any SwiftUI view and save (⌘+S)
-- **Watch changes appear instantly** in your running app! 🎉
+   - **Download InjectionIII.app** from [GitHub Releases](https://github.com/johnno1962/InjectionIII/releases)
+   - **Launch InjectionIII.app** and open your `macflare.xcodeproj`
+   - **Run your app** in Xcode (Debug mode)
+   - **Make changes** to any SwiftUI view and save (⌘+S)
+   - **Watch changes appear instantly** in your running app! 🎉
 
 5. **Set up SweetPad Autocomplete (Optional)**: For enhanced autocomplete in editors like Cursor or VS Code, install the [SweetPad extension](https://sweetpad.hyzyla.dev/docs/autocomplete/) and run `brew install xcode-build-server --head`, then use the "SweetPad: Generate Build Server Config" command to create a local `buildServer.json` file.
 
