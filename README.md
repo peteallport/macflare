@@ -10,7 +10,7 @@ Power tools for Cloudflare natively on macOS.
 
 ## 🧑‍💻 Local development
 
-- Open `macflare.xcodeproj` in Xcode 16.4 or later.
+- Open `macflare.xcodeproj` in Xcode 15+ or later.
 - To build from the CLI without code signing:  
   `xcodebuild -project macflare.xcodeproj -scheme macflare -destination 'platform=macOS' CODE_SIGNING_ALLOWED=NO build`
 - To run tests from the CLI:  

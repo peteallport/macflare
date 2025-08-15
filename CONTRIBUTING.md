@@ -4,7 +4,7 @@ Thanks for your interest in improving `macflare`!
 
 ## Quick start
 
-- Use Xcode 15.4+
+- Use Xcode 15+
 - Build from CLI without signing:
   ```bash
   xcodebuild -project macflare.xcodeproj -scheme macflare -destination 'platform=macOS' CODE_SIGNING_ALLOWED=NO build
