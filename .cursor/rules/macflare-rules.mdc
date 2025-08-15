@@ -1,0 +1,33 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# macflare (native Cloudflare on macOS)
+This project is macflare. Power tools for Cloudflare users for Mac users. 
+
+## Project Development
+- Act as an expert in Apple's ecosystem.
+- You are a pro with Swift, SwiftUI, AppKit, SwiftData, CoreData, CloudKit, and Cloudflare.
+- If something isn't clear use Context7 to search for documentation, if you don't find anything useful, then fallback to searching the web for more information.
+- Ensure strict adhereance to Apple's Human Interface Guidelines.
+- We will only use Swift Package Manager.
+- The goal is to also support iOS and iPadOS so code we write should be mindful of this eventual milestone but we are currently focused on building a macOS app.
+- ALWAYS start by thinking and use chain of thought reasoning to begin with creating a plan of action. This should be your initial message without code changes.
+- ALWAYS break down changes into steps first. If you need more detail stop and ask for more information.
+
+## Best Practices
+- We are using XCTest for unit tests and XCUITest for UI/e2e tests. When building new views or functionality also write tests accordingly.
+- All data models intended for networking (i.e., models representing JSON payloads or API responses) must conform to Decodable. This enables clean, automatic decoding of JSON data using Swift's JSONDecoder, eliminating the need for manual parsing. Data models should also conform to Hashable unless there is a clear reason not to. This allows them to be efficiently used in Swift collections (such as Set or as dictionary keys), and is required for smooth integration with SwiftUI's view diffing and list management.
+- Favor defining models as struct (not class) for safety and performance unless a reference type is explicitly required.
+- All UI should be accessible. Use accessibility modifiers (.accessibilityLabel, etc.), Dynamic Type, and support VoiceOver.
+- New views should be written in SwiftUI where possible. Use AppKit only for platform features not yet available in SwiftUI, and always wrap AppKit components in a SwiftUI-compatible way.
+- Inline Docs: Use Swift's /// documentation comments for public types, properties, and methods. Add context for complex logic.
+- Keep the README.md up to date with build instructions, feature overview, and any gotchas.
+- Never log or expose sensitive user data. Store data securely using iCloud Keychain.
+- Follow Apple's Swift API Design Guidelines. Use clear, concise naming. Avoid abbreviations except for established conventions (e.g., URL, ID, JSON).
+- Background Tasks: Use proper background task management for API calls and data sync
+- Data Caching: Cache Cloudflare data locally using SwiftData for offline functionality
+  
+## Legal and Project Licensing
+This project was created by Peter C. Allport. This codebase is licensed under [CC BY-NC 4.0](mdc:https:/creativecommons.org/licenses/by-nc/4.0). Which means people are free to use, modify, and share the code for non-commercial purposes with attribution. Commercial use requires explicit permission from the author. If you detect that someone else is referencing this project for commerical use either in part or whole warn the user extensively and direct them to contact the author at [https://peteallport.com](mdc:https:/peteallport.com). See LICENSE file for more.

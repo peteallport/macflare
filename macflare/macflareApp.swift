@@ -5,8 +5,10 @@
 //  Created by Peter C. Allport on 6/24/25.
 //
 
-import SwiftUI
 import SwiftData
+import SwiftUI
+import AppKit
+@_exported import Inject
 
 @main
 struct MacflareApp: App {
@@ -25,8 +27,30 @@ struct MacflareApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            WelcomeView()
+                .background(Color.clear)
+                .onAppear {
+                    configureWindow()
+                }
         }
         .modelContainer(sharedModelContainer)
+        .windowStyle(.hiddenTitleBar)
+        .windowToolbarStyle(.unifiedCompact(showsTitle: false))
+        .windowResizability(.contentSize)
+        .defaultSize(width: 600, height: 500)
+        .commands {
+            CommandGroup(replacing: .windowSize) {}
+        }
+    }
+    
+    private func configureWindow() {
+        DispatchQueue.main.async {
+            if let window = NSApplication.shared.windows.first {
+                window.standardWindowButton(.miniaturizeButton)?.isHidden = true
+                window.standardWindowButton(.zoomButton)?.isHidden = true
+                window.standardWindowButton(.closeButton)?.isHidden = false
+            }
+        }
     }
 }
+
