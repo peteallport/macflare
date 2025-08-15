@@ -143,3 +143,6 @@ playground.xcworkspace
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# Xcode build server configuration (machine-specific)
+buildServer.json

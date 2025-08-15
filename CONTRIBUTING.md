@@ -39,7 +39,9 @@
 - **Make changes** to any SwiftUI view and save (⌘+S)
 - **Watch changes appear instantly** in your running app! 🎉
 
-5. **Build and run**
+5. **Set up SweetPad Autocomplete (Optional)**: For enhanced autocomplete in editors like Cursor or VS Code, install the [SweetPad extension](https://sweetpad.hyzyla.dev/docs/autocomplete/) and run `brew install xcode-build-server --head`, then use the "SweetPad: Generate Build Server Config" command to create a local `buildServer.json` file.
+
+6. **Build and run**
    - The project uses automatic signing
    - No additional configuration needed
 
