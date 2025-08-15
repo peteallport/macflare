@@ -11,7 +11,7 @@ import AppKit
 @_exported import Inject
 
 @main
-struct macflareApp: App {
+struct MacflareApp: App {
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
             Item.self,

@@ -44,6 +44,7 @@ struct ContentView: View {
                     Button(action: addItem) {
                         Label("Add Item", systemImage: "plus")
                     }
+                    .accessibilityIdentifier("addItemButton")
                 }
             }
         } detail: {
@@ -51,6 +52,7 @@ struct ContentView: View {
         }
     }
 
+    @MainActor
     private func addItem() {
         withAnimation {
             let newItem = Item(timestamp: Date())
@@ -58,6 +60,7 @@ struct ContentView: View {
         }
     }
 
+    @MainActor
     private func deleteItems(offsets: IndexSet) {
         withAnimation {
             for index in offsets {

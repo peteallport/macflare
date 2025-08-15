@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+echo "🔍 Checking for sensitive files and information..."
+
+# Block mobile provisioning profiles or certs from being committed
+if git diff --cached --name-only | grep -E -q '\\.(p12|mobileprovision)$'; then
+  echo "🚫 You're trying to commit a signing file (.p12/.mobileprovision). Blocked."
+  exit 1
+fi
+
+# Normalize code-signing values and bundle identifiers in the Xcode project
+# before commit to avoid leaking local provisioning details into the repo.
+
+repo_root="$(git rev-parse --show-toplevel)"
+cd "$repo_root"
+
+pbxproj_path="macflare.xcodeproj/project.pbxproj"
+
+# Only run if the project file is staged in this commit
+if ! git diff --cached --name-only | grep -qx "$pbxproj_path"; then
+  exit 0
+fi
+
+if [ ! -f "$pbxproj_path" ]; then
+  exit 0
+fi
+echo "🧹 Cleaning sensitive information from project.pbxproj..."
+
+TEMP_CLEANED="$(mktemp)"
+
+# Scrub sensitive or machine-specific code signing fields and normalize bundle identifiers from STAGED blob
+git show ":$pbxproj_path" | sed -E \
+  -e 's/(DEVELOPMENT_TEAM = )[^;]*;/\1"";/g' \
+  -e 's/(PROVISIONING_PROFILE_SPECIFIER = )[^;]*;/\1"";/g' \
+  -e 's/(PROVISIONING_PROFILE = )[^;]*;/\1"";/g' \
+  -e 's/(CODE_SIGN_IDENTITY = )[^;]*;/\1"";/g' \
+  -e 's/PRODUCT_BUNDLE_IDENTIFIER = [^;]*\\.macflareTests[^;]*;/PRODUCT_BUNDLE_IDENTIFIER = "com.example.macflareTests";/g' \
+  -e 's/PRODUCT_BUNDLE_IDENTIFIER = [^;]*\\.macflareUITests[^;]*;/PRODUCT_BUNDLE_IDENTIFIER = "com.example.macflareUITests";/g' \
+  -e '/PRODUCT_BUNDLE_IDENTIFIER = [^;]*macflare(Tests|UITests)/! s/(PRODUCT_BUNDLE_IDENTIFIER = )[^;]*;/\1"com.example.macflare";/g' \
+  > "$TEMP_CLEANED"
+
+# Replace the staged file with the cleaned version
+HASH=$(git hash-object -w "$TEMP_CLEANED")
+git update-index --cacheinfo 100644 "$HASH" "$pbxproj_path"
+rm -f "$TEMP_CLEANED"
+echo "✅ Project file cleaned successfully"
+
+exit 0
+
+
