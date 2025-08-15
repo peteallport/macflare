@@ -23,13 +23,22 @@ struct ContentView: View {
                     }
                 }
                 .onDelete(perform: deleteItems)
-                
-                NavigationLink {
-                    Text("Add New Item")
-                } label: {
-                    Label("New Item", systemImage: "plus.circle.fill")
-                        .foregroundColor(.accentColor)
-                }
+    @MainActor
+    private func addItem() {
+        withAnimation {
+            let newItem = Item(timestamp: Date())
+            modelContext.insert(newItem)
+        }
+    }
+
+    @MainActor
+    private func deleteItems(offsets: IndexSet) {
+        withAnimation {
+            for index in offsets {
+                modelContext.delete(items[index])
+            }
+        }
+    }
             }
 #if os(macOS)
             .navigationSplitViewColumnWidth(min: 180, ideal: 200)
