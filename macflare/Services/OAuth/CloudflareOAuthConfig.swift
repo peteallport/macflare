@@ -14,12 +14,23 @@ import Foundation
 /// which is exactly what a distributed desktop app like MacFlare needs.
 enum CloudflareOAuthConfig {
     /// The client ID issued when registering a public OAuth client in the
-    /// Cloudflare dashboard. Public clients have no secret.
+    /// Cloudflare dashboard. Public clients have no secret, so this is not
+    /// sensitive.
     ///
-    /// - Important: Populate this with the real client ID before shipping. It is
-    ///   intentionally left empty so an unconfigured build fails loudly (via
-    ///   ``isConfigured``) rather than starting a broken sign-in.
-    static let clientID = ""
+    /// Loaded from the `CloudflareClientID` Info.plist key, which is wired to the
+    /// `CLOUDFLARE_CLIENT_ID` build setting so it can be supplied via an xcconfig
+    /// or CI without editing source. An empty/unset value means "not configured"
+    /// (see ``isConfigured``), so an unconfigured build fails loudly rather than
+    /// starting a broken sign-in.
+    static let clientID: String = {
+        guard let value = Bundle.main.object(forInfoDictionaryKey: "CloudflareClientID") as? String else {
+            return ""
+        }
+        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        // Guard against an unexpanded build-setting placeholder (e.g. when
+        // CLOUDFLARE_CLIENT_ID is undefined and not substituted).
+        return trimmed.hasPrefix("$(") ? "" : trimmed
+    }()
 
     /// Endpoint the user is sent to in order to grant consent.
     static let authorizationEndpoint = URL(string: "https://dash.cloudflare.com/oauth2/auth")!
