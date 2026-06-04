@@ -12,6 +12,8 @@ import AppKit
 
 @main
 struct MacflareApp: App {
+    @State private var authManager = CloudflareAuthManager()
+
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
             Item.self,
@@ -27,9 +29,11 @@ struct MacflareApp: App {
 
     var body: some Scene {
         WindowGroup {
-            WelcomeView()
+            RootView()
+                .environment(authManager)
                 .background(Color.clear)
                 .onAppear {
+                    authManager.restore()
                     configureWindow()
                 }
         }

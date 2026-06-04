@@ -21,7 +21,8 @@ struct VisualEffectView: NSViewRepresentable {
 
 struct WelcomeView: View {
     @Inject.ObserveInjection var inject
-    
+    @Environment(CloudflareAuthManager.self) private var authManager
+
     var body: some View {
         VStack(spacing: 40) {
             Spacer()
@@ -51,8 +52,23 @@ struct WelcomeView: View {
             
             // Action Buttons
             VStack(spacing: 16) {
-                Button("Login with Cloudflare") {
-                    
+                Button {
+                    Task { await authManager.signIn() }
+                } label: {
+                    if authManager.state.isAuthenticating {
+                        ProgressView()
+                            .controlSize(.small)
+                    } else {
+                        Text("Login with Cloudflare")
+                    }
+                }
+                .disabled(authManager.state.isAuthenticating)
+
+                if let message = authManager.state.failureMessage {
+                    Text(message)
+                        .font(.footnote)
+                        .foregroundStyle(.red)
+                        .multilineTextAlignment(.center)
                 }
             }
             .padding(.horizontal, 20)
@@ -75,4 +91,5 @@ struct WelcomeView: View {
 
 #Preview {
     WelcomeView()
+        .environment(CloudflareAuthManager())
 }
