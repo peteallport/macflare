@@ -5,18 +5,18 @@
 //  Created by Peter C. Allport on 6/24/25.
 //
 
+import AppKit
 import SwiftData
 import SwiftUI
-import AppKit
-@_exported import Inject
 
 @main
+@MainActor
 struct MacflareApp: App {
-    var sharedModelContainer: ModelContainer = {
+    private let sharedModelContainer: ModelContainer = {
         let schema = Schema([
             Item.self,
         ])
-        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
+        let modelConfiguration = ModelConfiguration(schema: schema, cloudKitDatabase: .none)
 
         do {
             return try ModelContainer(for: schema, configurations: [modelConfiguration])

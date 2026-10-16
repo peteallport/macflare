@@ -1,0 +1,92 @@
+name: macOS
+
+on:
+  pull_request:
+  push:
+    branches: [main, development]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: macos-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    name: Debug tests and Release build
+    runs-on: macos-15
+    timeout-minutes: 20
+    env:
+      # Keep the compiler explicit when the hosted image's default changes.
+      DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
+      RESOLVED_FILE: macflare.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Verify toolchain and tracked dependency resolution
+        run: |
+          set -euo pipefail
+          test -d "$DEVELOPER_DIR"
+          xcodebuild -version
+          xcrun swift --version
+          test -f "$RESOLVED_FILE"
+          git ls-files --error-unmatch "$RESOLVED_FILE"
+          mkdir -p "$RUNNER_TEMP/macflare-results"
+
+      - name: Test staged signing checks
+        run: python3 script/test-pre-commit.py
+
+      - name: Build and test Debug
+        run: |
+          set -euo pipefail
+          xcodebuild test \
+            -project macflare.xcodeproj \
+            -scheme macflare \
+            -configuration Debug \
+            -destination 'platform=macOS' \
+            -parallel-testing-enabled NO \
+            -derivedDataPath "$RUNNER_TEMP/macflare-derived-data" \
+            -resultBundlePath "$RUNNER_TEMP/macflare-results/Debug.xcresult" \
+            -disableAutomaticPackageResolution \
+            -onlyUsePackageVersionsFromResolvedFile \
+            CODE_SIGN_IDENTITY=- CODE_SIGNING_REQUIRED=YES CODE_SIGNING_ALLOWED=YES DEVELOPMENT_TEAM= \
+            2>&1 | tee "$RUNNER_TEMP/macflare-results/Debug.log"
+
+      - name: Build Release
+        run: |
+          set -euo pipefail
+          xcodebuild build \
+            -project macflare.xcodeproj \
+            -scheme macflare \
+            -configuration Release \
+            -destination 'generic/platform=macOS' \
+            -derivedDataPath "$RUNNER_TEMP/macflare-derived-data" \
+            -resultBundlePath "$RUNNER_TEMP/macflare-results/Release.xcresult" \
+            -disableAutomaticPackageResolution \
+            -onlyUsePackageVersionsFromResolvedFile \
+            ARCHS='arm64 x86_64' ONLY_ACTIVE_ARCH=NO \
+            CODE_SIGN_IDENTITY=- CODE_SIGNING_REQUIRED=YES CODE_SIGNING_ALLOWED=YES DEVELOPMENT_TEAM= \
+            2>&1 | tee "$RUNNER_TEMP/macflare-results/Release.log"
+
+      - name: Verify dependency resolution did not change
+        if: always()
+        run: |
+          set -euo pipefail
+          test -f "$RESOLVED_FILE"
+          git diff --exit-code -- "$RESOLVED_FILE"
+
+      - name: Upload failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: macos-failure-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/macflare-results/
+          if-no-files-found: ignore
+          retention-days: 7
