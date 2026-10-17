@@ -13,7 +13,7 @@ struct RootView: View {
 
     var body: some View {
         if authManager.state.isSignedIn {
-            ContentView()
+            AccountsView()
         } else {
             WelcomeView()
         }

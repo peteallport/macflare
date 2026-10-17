@@ -59,10 +59,30 @@ struct WelcomeView: View {
                         ProgressView()
                             .controlSize(.small)
                     } else {
-                        Text("Login with Cloudflare")
+                        Text("Sign in with Cloudflare")
                     }
                 }
                 .disabled(authManager.state.isAuthenticating)
+                .accessibilityIdentifier("cloudflareSignInButton")
+
+                if authManager.state.isAuthenticating {
+                    Button("Cancel") { Task { await authManager.signOut() } }
+                        .accessibilityIdentifier("cancelSignInButton")
+                }
+                if authManager.canRetrySession {
+                    Button("Retry Session") { Task { await authManager.retry() } }
+                        .accessibilityIdentifier("retrySessionButton")
+                    Button("Sign Out") { Task { await authManager.signOut() } }
+                }
+
+                if authManager.canRetrySignOut {
+                    Button("Remove Saved Session") { Task { await authManager.signOut() } }
+                        .accessibilityIdentifier("removeSavedSessionButton")
+                }
+                if let notice = authManager.sessionNotice {
+                    Text(notice).font(.footnote).foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                }
 
                 if let message = authManager.state.failureMessage {
                     Text(message)

@@ -11,7 +11,7 @@ import Foundation
 ///
 /// Conforms to `Codable` so it can be parsed from the token response and
 /// persisted to the Keychain, and to `Hashable` per project model conventions.
-struct AuthToken: Codable, Hashable {
+struct AuthToken: Codable, Hashable, Sendable {
     let accessToken: String
     let refreshToken: String?
     let tokenType: String
@@ -55,7 +55,8 @@ struct AuthToken: Codable, Hashable {
         if let absolute = try container.decodeIfPresent(Date.self, forKey: .expiresAt) {
             expiresAt = absolute
         } else if let expiresIn = try container.decodeIfPresent(Double.self, forKey: .expiresIn) {
-            expiresAt = Date().addingTimeInterval(expiresIn)
+            let referenceDate = decoder.userInfo[.authTokenReferenceDate] as? Date ?? Date()
+            expiresAt = referenceDate.addingTimeInterval(expiresIn)
         } else {
             expiresAt = nil
         }
@@ -71,8 +72,13 @@ struct AuthToken: Codable, Hashable {
     }
 
     /// Whether the access token is expired (or about to expire within `leeway`).
-    func isExpired(leeway: TimeInterval = 60) -> Bool {
-        guard let expiresAt else { return false }
-        return Date().addingTimeInterval(leeway) >= expiresAt
+    func isExpired(now: Date = Date(), leeway: TimeInterval = 60) -> Bool {
+        guard !accessToken.isEmpty, let expiresAt else { return true }
+        return now.addingTimeInterval(leeway) >= expiresAt
     }
+}
+
+/// Makes relative token expiration deterministic in networking tests.
+extension CodingUserInfoKey {
+    static let authTokenReferenceDate = CodingUserInfoKey(rawValue: "authTokenReferenceDate")!
 }

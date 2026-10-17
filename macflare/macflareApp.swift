@@ -5,7 +5,6 @@
 //  Created by Peter C. Allport on 6/24/25.
 //
 
-import SwiftData
 import SwiftUI
 import AppKit
 @_exported import Inject
@@ -14,39 +13,36 @@ import AppKit
 struct MacflareApp: App {
     @State private var authManager = CloudflareAuthManager()
 
-    var sharedModelContainer: ModelContainer = {
-        let schema = Schema([
-            Item.self,
-        ])
-        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
-
-        do {
-            return try ModelContainer(for: schema, configurations: [modelConfiguration])
-        } catch {
-            fatalError("Could not create ModelContainer: \(error)")
-        }
-    }()
-
     var body: some Scene {
         WindowGroup {
             RootView()
                 .environment(authManager)
                 .background(Color.clear)
-                .onAppear {
-                    authManager.restore()
-                    configureWindow()
+                .task {
+                    // Hosted unit tests inject their own session dependencies.
+                    // Never restore the user's real credentials in the test host.
+                    guard ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] == nil else { return }
+                    await authManager.restore()
                 }
+                .onAppear { configureWindow() }
         }
-        .modelContainer(sharedModelContainer)
         .windowStyle(.hiddenTitleBar)
         .windowToolbarStyle(.unifiedCompact(showsTitle: false))
         .windowResizability(.contentSize)
         .defaultSize(width: 600, height: 500)
         .commands {
             CommandGroup(replacing: .windowSize) {}
+            #if DEBUG
+            CommandMenu("Development") {
+                Button("Refresh Cloudflare Session") {
+                    Task { await authManager.loadAccounts(forceRefresh: true) }
+                }
+                .disabled(!authManager.state.isSignedIn || authManager.isLoadingAccounts)
+            }
+            #endif
         }
     }
-    
+
     private func configureWindow() {
         DispatchQueue.main.async {
             if let window = NSApplication.shared.windows.first {
@@ -57,4 +53,3 @@ struct MacflareApp: App {
         }
     }
 }
-

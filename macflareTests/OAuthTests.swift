@@ -9,7 +9,46 @@ import Foundation
 import Testing
 @testable import macflare
 
+@MainActor
 struct OAuthTests {
+
+    @Test func selfManagedClientUsesCurrentScopesAndLoopbackRedirect() {
+        let config = CloudflareOAuthConfig(clientID: "test-client")
+        #expect(config.scopes == ["account.read", "offline_access"])
+        #expect(config.redirectURI == "http://127.0.0.1:8976/oauth/callback")
+        #expect(config.isConfigured)
+        #expect(!CloudflareOAuthConfig(clientID: "").isConfigured)
+        #expect(!CloudflareOAuthConfig(clientID: "$(CLOUDFLARE_CLIENT_ID)").isConfigured)
+    }
+
+    @Test func loopbackCallbackAcceptsMatchingHostPathAndState() throws {
+        let callback = try LoopbackOAuthCallback.parse(
+            request: "GET /oauth/callback?code=test-code&state=expected HTTP/1.1\r\nHost: 127.0.0.1:8976\r\n\r\n",
+            redirectURI: "http://127.0.0.1:8976/oauth/callback",
+            expectedState: "expected"
+        )
+        #expect(callback.absoluteString == "http://127.0.0.1:8976/oauth/callback?code=test-code&state=expected")
+    }
+
+    @Test(arguments: [
+        "GET /oauth/callback?code=test&state=wrong HTTP/1.1\r\nHost: 127.0.0.1:8976\r\n\r\n",
+        "GET /oauth/callback?code=test&state=expected&state=expected HTTP/1.1\r\nHost: 127.0.0.1:8976\r\n\r\n",
+        "GET /unexpected?code=test&state=expected HTTP/1.1\r\nHost: 127.0.0.1:8976\r\n\r\n",
+        "GET /oauth/callback?code=test&state=expected HTTP/1.1\r\nHost: example.test\r\n\r\n",
+        "GET /oauth/callback?code=test&state=expected HTTP/1.1\r\n\r\n",
+        "GET /oauth/callback?code=test&state=expected HTTP/1.1\r\nHost: 127.0.0.1:8976\r\nHost: 127.0.0.1:8976\r\n\r\n",
+        "POST /oauth/callback?code=test&state=expected HTTP/1.1\r\nHost: 127.0.0.1:8976\r\n\r\n",
+        "GET http://example.test/oauth/callback?code=test&state=expected HTTP/1.1\r\nHost: 127.0.0.1:8976\r\n\r\n",
+    ])
+    func loopbackCallbackRejectsUnmatchedOrAmbiguousRequests(request: String) {
+        #expect(throws: (any Error).self) {
+            try LoopbackOAuthCallback.parse(
+                request: request,
+                redirectURI: "http://127.0.0.1:8976/oauth/callback",
+                expectedState: "expected"
+            )
+        }
+    }
 
     // MARK: - PKCE
 
@@ -55,8 +94,8 @@ struct OAuthTests {
         #expect(token.tokenType == "Bearer")
         #expect(token.refreshToken == nil)
         #expect(token.expiresAt == nil)
-        // A token with no expiry is treated as non-expiring.
-        #expect(!token.isExpired())
+        // An OAuth token with unknown expiry must be refreshed before use.
+        #expect(token.isExpired())
     }
 
     @Test func authTokenRoundTripsThroughCoding() throws {

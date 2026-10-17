@@ -6,6 +6,10 @@ Power tools for Cloudflare natively on macOS.
 
 **See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed setup instructions.**
 
+## Cloudflare sign-in
+
+This branch adds PKCE sign-in, account loading, session refresh, and sign-out. A registered Cloudflare public client ID is required. See [authentication setup and verification](Docs/authentication.md). Automated tests use injected responses; successful compilation alone does not verify live authentication.
+
 ## ❤️ Support macflare
 
 - [ ] **COMING SOON**: Download from the App Store to support new features, enhancements, and for automatic updates.

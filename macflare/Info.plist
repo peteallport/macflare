@@ -4,17 +4,6 @@
 <dict>
 	<key>CloudflareClientID</key>
 	<string>$(CLOUDFLARE_CLIENT_ID)</string>
-	<key>CFBundleURLTypes</key>
-	<array>
-		<dict>
-			<key>CFBundleURLName</key>
-			<string>com.example.macflare.oauth</string>
-			<key>CFBundleURLSchemes</key>
-			<array>
-				<string>macflare</string>
-			</array>
-		</dict>
-	</array>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>remote-notification</string>

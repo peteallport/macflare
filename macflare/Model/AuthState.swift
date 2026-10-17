@@ -11,6 +11,9 @@ import Foundation
 enum AuthState: Equatable {
     case signedOut
     case authenticating
+    case restoring
+    /// The saved session was rejected or cannot be refreshed.
+    case expired(String)
     case signedIn
     /// Sign-in failed; the associated value is a user-presentable message.
     case failed(String)
@@ -21,12 +24,16 @@ enum AuthState: Equatable {
     }
 
     var isAuthenticating: Bool {
-        if case .authenticating = self { return true }
-        return false
+        switch self {
+        case .authenticating, .restoring: return true
+        default: return false
+        }
     }
 
     var failureMessage: String? {
-        if case .failed(let message) = self { return message }
-        return nil
+        switch self {
+        case .failed(let message), .expired(let message): return message
+        default: return nil
+        }
     }
 }

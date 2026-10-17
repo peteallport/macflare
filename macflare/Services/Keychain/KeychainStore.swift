@@ -8,13 +8,31 @@
 import Foundation
 import Security
 
+/// Injectable storage keeps lifecycle tests away from the user's Keychain.
+@MainActor
+protocol AuthTokenStoring {
+    func save(_ token: AuthToken) throws
+    func load() throws -> AuthToken?
+    func delete() throws
+}
+
 /// Minimal, secure persistence for the OAuth token using the macOS Keychain.
 ///
 /// Tokens are sensitive, so they are never written to `UserDefaults` or logs. A
 /// single generic-password item holds the JSON-encoded ``AuthToken``.
-struct KeychainStore {
-    enum KeychainError: Error, Equatable {
+struct KeychainStore: AuthTokenStoring {
+    enum KeychainError: Error, LocalizedError, Equatable {
         case unexpectedStatus(OSStatus)
+        case invalidStoredData
+
+        var errorDescription: String? {
+            switch self {
+            case .unexpectedStatus(let status):
+                return "The saved Cloudflare session could not be accessed in Keychain (status \(status))."
+            case .invalidStoredData:
+                return "The saved Cloudflare session in Keychain is unreadable. Sign out to remove it, then sign in again."
+            }
+        }
     }
 
     let service: String
@@ -71,8 +89,12 @@ struct KeychainStore {
         let status = SecItemCopyMatching(query as CFDictionary, &result)
         switch status {
         case errSecSuccess:
-            guard let data = result as? Data else { return nil }
-            return try JSONDecoder().decode(AuthToken.self, from: data)
+            guard let data = result as? Data else { throw KeychainError.invalidStoredData }
+            do {
+                return try JSONDecoder().decode(AuthToken.self, from: data)
+            } catch {
+                throw KeychainError.invalidStoredData
+            }
         case errSecItemNotFound:
             return nil
         default:

@@ -41,8 +41,9 @@ struct PKCE: Equatable {
     }
 
     private static func randomBase64URLString(byteCount: Int) -> String {
-        var bytes = [UInt8](repeating: 0, count: byteCount)
-        _ = SecRandomCopyBytes(kSecRandomDefault, bytes.count, &bytes)
+        // SystemRandomNumberGenerator uses the platform's secure random source.
+        // Avoid accepting an all-zero verifier if a fallible C RNG fails.
+        let bytes = (0..<byteCount).map { _ in UInt8.random(in: .min ... .max) }
         return Data(bytes).base64URLEncodedString()
     }
 }
