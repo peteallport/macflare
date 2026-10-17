@@ -27,7 +27,7 @@ Use a local signing configuration suitable for the existing project entitlements
 
 ## Verification
 
-The automated suite injects browser authorization, token storage, a clock, and URLSession responses. Following Timespace's observable view model and injectable networking approach, it checks request bodies and behavior through expired restore, revoked tokens, transient failures, concurrent refresh, API rejection, persistence failures, and sign-out races. Stubbed responses establish app behavior only.
+The automated suite injects browser authorization, token storage, a clock, and URLSession responses. It checks request bodies and observable state through expired restore, revoked tokens, transient failures, concurrent refresh, API rejection, persistence failures, and sign-out races. Stubbed responses establish app behavior only.
 
 Before calling live authentication complete, verify the actual configured app:
 

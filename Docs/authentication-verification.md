@@ -39,4 +39,4 @@ xcodebuild -project macflare.xcodeproj -scheme macflare -configuration Release \
   CODE_SIGNING_ALLOWED=NO build
 ```
 
-Timespace references used read-only: `Model/Insiders/InsidersViewModel.swift` for observable/injected state and task coordination; `timespaceTests/NetworkServiceTests.swift` for URLSession/URLProtocol isolation. See [setup and primary sources](authentication.md).
+The tests use injected state, controlled task coordination, and isolated URLSession/URLProtocol responses. See [setup and primary sources](authentication.md).

@@ -9,9 +9,9 @@ import Foundation
 import Testing
 @testable import macflare
 
-/// Like Timespace's NetworkServiceTests, this suite exercises actual URLSession
-/// request building and response handling offline. Serialization isolates the
-/// URLProtocol registration; the credential store and clock are per-test fakes.
+/// This suite exercises actual URLSession request building and response handling
+/// offline. Serialization isolates the URLProtocol registration; the credential
+/// store and clock are per-test fakes.
 @Suite(.serialized)
 @MainActor
 struct CloudflareAuthManagerTests {
