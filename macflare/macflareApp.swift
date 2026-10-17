@@ -42,7 +42,7 @@ struct MacflareApp: App {
             CommandGroup(replacing: .windowSize) {}
         }
     }
-    
+
     private func configureWindow() {
         DispatchQueue.main.async {
             if let window = NSApplication.shared.windows.first {
@@ -53,4 +53,3 @@ struct MacflareApp: App {
         }
     }
 }
-

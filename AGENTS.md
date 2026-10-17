@@ -10,6 +10,7 @@ Macflare is a native macOS prototype for Cloudflare power users. The welcome scr
 - Use Swift Package Manager and commit intentional changes to `Package.resolved`. Inject is the sole third-party dependency and its integration is Debug-only.
 - Use Swift Testing for unit tests and XCTest for UI tests. SwiftData tests use in-memory stores. Verify Debug tests, a Release build, and the hook regression checks for baseline changes.
 - Keep personal signing edits intact and unstaged. The pre-commit hook validates the index without modifying files or staging changes; never assume it scrubs signing values.
+- Run SwiftFormat in lint mode and SwiftLint with the checked-in configuration. Keep the hook read-only: never autoformat, auto-fix, or stage files during a commit. See `CONTRIBUTING.md` for tool versions and full checks.
 - Preserve human source creators and actual dates. New source files use `Created by Peter C. Allport`.
 
 ## Implementation

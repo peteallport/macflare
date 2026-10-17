@@ -9,6 +9,8 @@ check_dir="$(mktemp -d "${TMPDIR:-/tmp}/macflare-pre-commit.XXXXXX")"
 trap 'rm -rf -- "$check_dir"' EXIT
 trap 'exit 130' INT
 trap 'exit 143' TERM
+# Keep transient tool files (including xcrun caches) inside the disposable snapshot.
+export TMPDIR="$check_dir/"
 
 # NUL-delimited paths handle whitespace and newlines. Deleting a signing artifact
 # is allowed; renaming one into the commit is checked as an addition.
@@ -22,12 +24,34 @@ while IFS= read -r -d '' path; do
     esac
 done < "$check_dir/paths"
 
+git diff --cached --name-only --no-renames --diff-filter=ACMT -z -- '*.swift' > "$check_dir/swift-paths"
 project='macflare.xcodeproj/project.pbxproj'
 git diff --cached --name-only -z -- "$project" > "$check_dir/project-path"
-if [ ! -s "$check_dir/project-path" ]; then
-    echo 'No staged project changes; signing artifact checks passed.'
+if [ ! -s "$check_dir/project-path" ] && [ ! -s "$check_dir/swift-paths" ]; then
+    echo 'No staged project changes or Swift files; signing artifact checks passed.'
     exit 0
 fi
+
+if [ -s "$check_dir/swift-paths" ]; then
+    for tool in swiftformat swiftlint; do
+        if ! command -v "$tool" >/dev/null 2>&1; then
+            printf 'Commit blocked: required tool %s is unavailable.\n' "$tool" >&2
+            exit 1
+        fi
+    done
+
+    # Include staged configuration and directory layout, even for partial staging.
+    mkdir "$check_dir/tree"
+    git checkout-index --all --prefix="$check_dir/tree/"
+    for config in .swiftformat .swiftlint.yml; do
+        if [ -L "$check_dir/tree/$config" ] || [ ! -f "$check_dir/tree/$config" ]; then
+            printf 'Commit blocked: staged %s is missing or not a regular file.\n' "$config" >&2
+            exit 1
+        fi
+    done
+fi
+
+if [ -s "$check_dir/project-path" ]; then
 
 # Read the mode and blob from the active index, including GIT_INDEX_FILE used by
 # git commit. Never read or rewrite the working project or run git add/update-index.
@@ -107,3 +131,25 @@ for identifier, target in objects.items():
 
 print('Staged project checks passed; index and working tree preserved.')
 PY
+fi
+
+if [ -s "$check_dir/swift-paths" ]; then
+    cd "$check_dir/tree"
+    while IFS= read -r -d '' file; do
+        if [ -L "./$file" ] || [ ! -f "./$file" ]; then
+            printf 'Commit blocked: staged Swift path is not a regular file: %s\n' "$file" >&2
+            exit 1
+        fi
+        printf 'Checking staged content: %s\n' "$file"
+        if ! swiftformat "./$file" --lint --cache ignore; then
+            echo 'Commit blocked: SwiftFormat failed. Fix formatting and stage only intended changes.' >&2
+            exit 1
+        fi
+        if ! swiftlint lint --quiet --no-cache "./$file"; then
+            echo 'Commit blocked: SwiftLint failed. Fix reported issues and stage only intended changes.' >&2
+            exit 1
+        fi
+    done < "$check_dir/swift-paths"
+fi
+
+echo 'Staged checks passed; index and working tree preserved.'

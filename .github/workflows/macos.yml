@@ -15,11 +15,11 @@ concurrency:
 jobs:
   build-and-test:
     name: Debug tests and Release build
-    runs-on: macos-15
+    runs-on: xcode-27
     timeout-minutes: 20
     env:
       # Keep the compiler explicit when the hosted image's default changes.
-      DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
+      DEVELOPER_DIR: /Applications/Xcode_27.app/Contents/Developer
       RESOLVED_FILE: macflare.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
     defaults:
       run:
@@ -34,14 +34,49 @@ jobs:
         run: |
           set -euo pipefail
           test -d "$DEVELOPER_DIR"
-          xcodebuild -version
+          xcode_version="$(xcodebuild -version)"
+          printf '%s\n' "$xcode_version"
+          if [[ "$xcode_version" != $'Xcode 27.0\nBuild version 27A266a' ]]; then
+            echo '::error::CI requires release Xcode 27.0 (27A266a). Update the toolchain pin deliberately.'
+            exit 1
+          fi
           xcrun swift --version
           test -f "$RESOLVED_FILE"
           git ls-files --error-unmatch "$RESOLVED_FILE"
           mkdir -p "$RUNNER_TEMP/macflare-results"
 
-      - name: Test staged signing checks
-        run: python3 script/test-pre-commit.py
+      - name: Install pinned Swift validation tools
+        env:
+          SWIFTFORMAT_VERSION: '0.61.1'
+          SWIFTFORMAT_SHA256: b990400779aceb7d7020796eb9ba814d4480543f671d38fc0ff48cb72f04c584
+          SWIFTLINT_VERSION: '0.63.2'
+          SWIFTLINT_SHA256: c59a405c85f95b92ced677a500804e081596a4cae4a6a485af76065557d6ed29
+        run: |
+          set -euo pipefail
+          tool_dir="$RUNNER_TEMP/macflare-validation-tools"
+          mkdir -p "$tool_dir/swiftformat" "$tool_dir/swiftlint"
+          curl -fsSL --retry 3 \
+            "https://github.com/nicklockwood/SwiftFormat/releases/download/${SWIFTFORMAT_VERSION}/swiftformat.zip" \
+            -o "$tool_dir/swiftformat.zip"
+          curl -fsSL --retry 3 \
+            "https://github.com/realm/SwiftLint/releases/download/${SWIFTLINT_VERSION}/portable_swiftlint.zip" \
+            -o "$tool_dir/swiftlint.zip"
+          echo "$SWIFTFORMAT_SHA256  $tool_dir/swiftformat.zip" | shasum -a 256 --check
+          echo "$SWIFTLINT_SHA256  $tool_dir/swiftlint.zip" | shasum -a 256 --check
+          unzip -q "$tool_dir/swiftformat.zip" -d "$tool_dir/swiftformat"
+          unzip -q "$tool_dir/swiftlint.zip" -d "$tool_dir/swiftlint"
+          test "$("$tool_dir/swiftformat/swiftformat" --version)" = "$SWIFTFORMAT_VERSION"
+          test "$("$tool_dir/swiftlint/swiftlint" version)" = "$SWIFTLINT_VERSION"
+          echo "$tool_dir/swiftformat" >> "$GITHUB_PATH"
+          echo "$tool_dir/swiftlint" >> "$GITHUB_PATH"
+
+      - name: Test staged validation
+        run: python3 -B -u script/test-pre-commit.py
+
+      - name: Check Swift formatting and lint
+        run: |
+          swiftformat macflare macflareTests macflareUITests --lint --cache ignore
+          swiftlint lint --quiet --no-cache
 
       - name: Build and test Debug
         run: |

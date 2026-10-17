@@ -7,7 +7,7 @@ Macflare is currently a prototype: it opens a welcome screen, and **Login with C
 ## Getting started
 
 - The app and tests target **macOS 14.0+** on Mac. iOS and iPadOS are possible future work, not supported build destinations.
-- Use **Xcode 16+** for the project format and Swift 6 compiler. Development validation uses Xcode 27.0 (27A266a); CI selects Xcode 26.3. See [toolchain details](CONTRIBUTING.md#toolchain-and-platforms).
+- Use **Xcode 27.0 (27A266a)**, matching development validation and CI. The project/compiler floor remains Xcode 16; see [toolchain details](CONTRIBUTING.md#toolchain-and-platforms).
 - Local ad-hoc builds and tests do not require an Apple Developer account.
 
 ```bash
@@ -23,7 +23,7 @@ The script builds Debug, launches the app, and checks that its process remains r
 
 - Swift 6 language mode and complete strict concurrency checking for the app and tests.
 - Swift Package Manager with a tracked [`Package.resolved`](macflare.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved); Inject 1.5.2 is the sole third-party dependency and its integration is Debug-only.
-- In-memory SwiftData unit tests, a welcome-screen UI test, and regression tests for the staged signing validator.
+- In-memory SwiftData unit tests, a welcome-screen UI test, and regression tests for staged signing, SwiftFormat, and SwiftLint validation.
 - A single [macOS CI job](.github/workflows/macos.yml) runs Debug tests and a Release build for pull requests and pushes to `main` and `development`.
 - App Sandbox and outgoing network access; hot reload permissions are limited to Debug. CloudKit, push notifications, and file access are not implemented capabilities.
 

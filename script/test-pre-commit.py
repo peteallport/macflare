@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Test the tracked signing hook in disposable repos; never install it locally.
+"""Test the tracked staged-validation hook in disposable repos; never install it locally.
 
 Created by Peter C. Allport
 """
@@ -17,6 +17,8 @@ REPOSITORY = Path(__file__).resolve().parents[1]
 HOOK = REPOSITORY / '.githooks/pre-commit'
 PROJECT = 'macflare.xcodeproj/project.pbxproj'
 GIT = shutil.which('git')
+FORMAT_CONFIG = '--swift-version 6.0\n--language-mode 6\n--rules spaceAroundOperators\n'
+LINT_CONFIG = 'only_rules:\n  - trailing_whitespace\ntrailing_whitespace: warning\n'
 
 
 def object_id(number):
@@ -85,6 +87,9 @@ class Fixture:
         self.git('config', 'core.hooksPath', str(self.hooks))
         self.write(PROJECT, VALID_PROJECT)
         self.write('README.md', 'Baseline\n')
+        self.write('Example.swift', 'let value = 0\n')
+        self.write('.swiftformat', FORMAT_CONFIG)
+        self.write('.swiftlint.yml', LINT_CONFIG)
         self.git('add', '.')
         self.git('commit', '-qm', 'Fixture baseline')
         shutil.copyfile(HOOK, self.hooks / 'pre-commit')
@@ -246,12 +251,104 @@ def index_cases():
     print('PASS index read failure blocks commit and cleans snapshot')
 
 
+def swift_cases():
+    for valid in (True, False):
+        with fixture() as test:
+            test.stage('Example.swift', 'let value = 1\n' if valid else 'let value=1\n')
+            test.write('Example.swift', 'let value=2\n' if valid else 'let value = 2\n')
+            test.write('Untracked.swift', 'let unfinished=3\n')
+            test.check_hook('Staged checks passed' if valid else 'SwiftFormat failed', failure=not valid)
+        print('PASS partial Swift staging uses staged content: ' + ('valid' if valid else 'invalid'))
+    for staged_rules, working_rules, failure in (
+        ('trailingSpace', 'spaceAroundOperators', False),
+        ('spaceAroundOperators', 'trailingSpace', True),
+    ):
+        with fixture() as test:
+            test.stage('.swiftformat', FORMAT_CONFIG.replace('spaceAroundOperators', staged_rules))
+            test.write('.swiftformat', FORMAT_CONFIG.replace('spaceAroundOperators', working_rules))
+            test.stage('Example.swift', 'let value=1\n')
+            test.check_hook('SwiftFormat failed' if failure else 'Staged checks passed', failure=failure)
+        print('PASS staged formatter config wins over working config: ' + staged_rules)
+    for severity in ('warning', 'error'):
+        with fixture() as test:
+            test.stage('.swiftlint.yml', LINT_CONFIG.replace('warning', severity))
+            test.write('.swiftlint.yml', LINT_CONFIG.replace('warning', 'error' if severity == 'warning' else 'warning'))
+            test.stage('Example.swift', 'let value = 1 \n')
+            test.check_hook('SwiftLint failed' if severity == 'error' else 'warning: Trailing Whitespace',
+                            failure=severity == 'error')
+        print('PASS staged linter config: ' + severity + (' blocks' if severity == 'error' else ' is advisory'))
+    with fixture() as test:
+        test.stage('Nested/.swiftformat', FORMAT_CONFIG.replace('spaceAroundOperators', 'trailingSpace'))
+        test.write('Nested/.swiftformat', FORMAT_CONFIG)
+        test.stage('Nested/Example.swift', 'let value=1\n')
+        test.check_hook('Staged checks passed')
+    print('PASS staged nested formatter config and directory layout are preserved')
+    with fixture() as test:
+        test.stage('Nested/.swiftlint.yml', LINT_CONFIG.replace('warning', 'error'))
+        test.write('Nested/.swiftlint.yml', LINT_CONFIG)
+        test.stage('Nested/Example.swift', 'let value = 1 \n')
+        test.check_hook('SwiftLint failed', failure=True)
+    print('PASS staged nested linter config is respected')
+    with fixture() as test:
+        alternate = test.root.parent / 'alternate-index'
+        shutil.copyfile(test.root / '.git/index', alternate)
+        primary_index = (test.root / '.git/index').read_bytes()
+        test.env['GIT_INDEX_FILE'] = str(alternate)
+        test.stage('Example.swift', 'let value=1\n')
+        test.write('Example.swift', 'let value = 1\n')
+        test.check_hook('SwiftFormat failed', failure=True)
+        assert (test.root / '.git/index').read_bytes() == primary_index
+    print('PASS staged Swift uses alternate index and preserves primary index')
+    for tool in ('swiftformat', 'swiftlint'):
+        with fixture() as test:
+            test.stage('Example.swift', 'let value = 1\n')
+            for required in ('bash', 'git', 'mktemp', 'mkdir', 'rm', 'swiftformat', 'swiftlint'):
+                if required != tool:
+                    (test.tools / required).symlink_to(shutil.which(required))
+            test.env['PATH'] = str(test.tools)
+            test.check_hook(f'required tool {tool} is unavailable', failure=True)
+        print('PASS missing ' + tool + ' blocks without mutation')
+    for config in ('.swiftformat', '.swiftlint.yml'):
+        for kind in ('deleted', 'symlink'):
+            with fixture() as test:
+                test.stage('Example.swift', 'let value = 1\n')
+                test.git('rm', '--', config)
+                if kind == 'symlink':
+                    (test.root / config).symlink_to('README.md')
+                    test.git('add', '--', config)
+                test.check_hook(f'staged {config} is missing or not a regular file', failure=True)
+            print('PASS ' + kind + ' ' + config + ' blocks staged Swift checks')
+    with fixture() as test:
+        test.git('rm', '--', 'Example.swift')
+        test.check_hook('No staged project changes or Swift files')
+    print('PASS deleted Swift file is skipped')
+    with fixture() as test:
+        test.git('rm', '--', 'Example.swift')
+        (test.root / 'Example.swift').symlink_to('README.md')
+        test.git('add', '--', 'Example.swift')
+        test.check_hook('staged Swift path is not a regular file', failure=True)
+    print('PASS staged Swift symlink is rejected')
+    with fixture() as test:
+        test.git('mv', '--', 'Example.swift', '-New name\n.swift')
+        test.check_hook('Staged checks passed')
+    print('PASS renamed Swift path with spaces, newline and leading dash')
+    with fixture() as test:
+        test.stage('Example.swift', 'let value = 1\n')
+        test.fake_tool('git', 'if [ "$1" = checkout-index ]; then echo "simulated snapshot failure" >&2; exit 73; fi\n'
+                       + 'exec ' + json.dumps(GIT) + ' "$@"\n')
+        test.check_hook('simulated snapshot failure', failure=True)
+    print('PASS snapshot failure blocks and cleans temporary files')
+
+
 def actual_commits(linked=False):
     with fixture() as test:
         if linked:
             linked_root = test.root.parent / 'linked'
             test.git('worktree', 'add', '--detach', str(linked_root), 'HEAD')
             test.root = linked_root
+        test.stage('Example.swift', 'let value = 1\n')
+        test.write('Example.swift', 'let value=2\n')
+        test.write('Untracked.swift', 'let unfinished=3\n')
         staged = VALID_PROJECT + '// staged project edit\n'
         test.stage(PROJECT, staged)
         test.write(PROJECT, staged.replace('"DEVELOPMENT_TEAM" = ""',
@@ -263,6 +360,7 @@ def actual_commits(linked=False):
         assert b'Staged project checks passed' in result.stdout
         assert test.git('show', 'HEAD:' + PROJECT).stdout == staged.encode()
         assert test.git('show', 'HEAD:README.md').stdout == b'Baseline\n'
+        assert test.git('show', 'HEAD:Example.swift').stdout == b'let value = 1\n'
         assert working_files(test.root) == before
         test.stage(PROJECT, staged.replace('"DEVELOPMENT_TEAM" = ""',
                                           '"DEVELOPMENT_TEAM" = "PERSONAL"'))
@@ -279,12 +377,13 @@ def actual_commits(linked=False):
 
 
 if __name__ == '__main__':
-    for required in ('git', 'plutil', 'python3'):
+    for required in ('git', 'plutil', 'python3', 'swiftformat', 'swiftlint'):
         if shutil.which(required) is None:
             raise SystemExit('Required test tool unavailable: ' + required)
     project_cases()
     artifact_cases()
     index_cases()
+    swift_cases()
     actual_commits()
     actual_commits(linked=True)
-    print('All signing-hook fixtures passed; disposable repositories removed.')
+    print('All staged-validation fixtures passed; disposable repositories removed.')

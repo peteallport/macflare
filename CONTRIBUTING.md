@@ -11,11 +11,11 @@ Macflare is a native macOS prototype. The welcome screen is implemented; the Clo
 | Language | Swift 6 with complete strict concurrency checking |
 | Project/compiler floor | Xcode 16+ for the project format and Swift 6; older versions are not continuously tested |
 | Local validation toolchain | Xcode 27.0 (27A266a), Swift 6.4 |
-| CI toolchain | Xcode 26.3 on GitHub-hosted `macos-15` |
+| CI toolchain | Xcode 27.0 (27A266a) on GitHub-hosted `xcode-27` |
 
 The development Mac must meet the chosen Xcode version's host OS requirements. That requirement is separate from the app's macOS 14 deployment target. Builds on a newer host do not establish runtime coverage on macOS 14.
 
-The [macOS 15 runner inventory](https://github.com/actions/runner-images/blob/main/images/macos/macos-15-arm64-Readme.md#xcode) lists `/Applications/Xcode_26.3.app`. CI selects it explicitly through `DEVELOPER_DIR`; update this pin deliberately when the hosted image changes. Local Xcode selection can also be overridden per command without changing the machine's default:
+The [Xcode 27 runner inventory](https://github.com/actions/runner-images/blob/main/images/macos/xcode-27-arm64-Readme.md#xcode) lists release Xcode 27.0 (27A266a) at `/Applications/Xcode_27.app`. GitHub currently labels the hosted image as preview; CI selects the release compiler explicitly through `DEVELOPER_DIR` and verifies its version and build number. Update this pin deliberately when the hosted image changes. Local Xcode selection can also be overridden per command without changing the machine's default:
 
 ```bash
 DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild -version
@@ -23,7 +23,9 @@ DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild -version
 
 ## Setup and verification
 
-Clone the repository, then enable the staged signing validator once per clone:
+Install [SwiftFormat 0.61.1](https://github.com/nicklockwood/SwiftFormat/releases/tag/0.61.1) and [SwiftLint 0.63.2](https://github.com/realm/SwiftLint/releases/tag/0.63.2), placing their executables on `PATH`. CI downloads these exact versions and verifies their SHA-256 digests before running them. Update tool versions and checksums together after checking the formatting and lint rules.
+
+Clone the repository, then enable staged validation once per clone:
 
 ```bash
 git config core.hooksPath .githooks
@@ -55,12 +57,14 @@ xcodebuild build \
   ARCHS='arm64 x86_64' ONLY_ACTIVE_ARCH=NO \
   CODE_SIGN_IDENTITY=- CODE_SIGNING_REQUIRED=YES CODE_SIGNING_ALLOWED=YES DEVELOPMENT_TEAM=
 
-python3 script/test-pre-commit.py
+swiftformat macflare macflareTests macflareUITests --lint --cache ignore
+swiftlint lint --quiet --no-cache
+python3 -B -u script/test-pre-commit.py
 ```
 
 Unit tests use an in-memory SwiftData store and do not modify the app's persistent store. UI tests launch the actual app and verify the welcome screen and placeholder login control. The UI test host needs an active macOS graphical session; XCTest may request automation permission on a developer Mac.
 
-The [CI workflow](.github/workflows/macos.yml) runs these checks in one fresh hosted Mac job, builds Release for both Apple Silicon and Intel, cancels superseded runs, checks that the dependency lockfile remains unchanged, and retains logs and `.xcresult` bundles for seven days after failures. It uses immutable commits for [checkout](https://github.com/actions/checkout/releases/tag/v7.0.1) and [artifact upload](https://github.com/actions/upload-artifact/releases/tag/v7.0.2); the existing Dependabot configuration proposes action updates.
+The [CI workflow](.github/workflows/macos.yml) runs staged-validation regressions, formatting, lint, and build/test checks in one fresh hosted Mac job. It builds Release for both Apple Silicon and Intel, cancels superseded runs, checks that the dependency lockfile remains unchanged, and retains logs and `.xcresult` bundles for seven days after failures. It uses immutable commits for [checkout](https://github.com/actions/checkout/releases/tag/v7.0.1) and [artifact upload](https://github.com/actions/upload-artifact/releases/tag/v7.0.2); the existing Dependabot configuration proposes action updates.
 
 ## Dependencies and hot reload
 
@@ -76,7 +80,9 @@ The checked-in project has generic bundle identifiers and empty developer team/s
 
 Keep personal Xcode signing changes out of commits. Prefer command-line build setting overrides for local signing. If Xcode edits `project.pbxproj`, use selective staging to commit the intended shared changes while leaving the existing personal signing edits in the working tree. Avoid restoring the whole project file or staging it wholesale to address a hook failure.
 
-The [pre-commit hook](.githooks/pre-commit) requires macOS `plutil` and Python 3 and validates the **staged contents only**. It rejects signing artifacts and nonempty developer team, provisioning profile, or signing identity settings, including conditional build settings. It also checks project syntax and distinct literal bundle identifiers across targets. It never rewrites the working tree, updates the index, or changes bundle identifiers. A rejection leaves both staged and unstaged changes intact so you can correct the staged configuration deliberately. Run `python3 script/test-pre-commit.py` after changing the hook.
+The [pre-commit hook](.githooks/pre-commit) requires macOS `plutil`, Python 3, and the Swift tools above when staged Swift files need checking. It validates **staged contents only**, including staged formatter/linter configuration, so personal working edits do not affect the result. It rejects signing artifacts and nonempty developer team, provisioning profile, or signing identity settings, including conditional build settings. It also checks project syntax and distinct literal bundle identifiers across targets.
+
+SwiftFormat checks whitespace without rewriting files; SwiftLint checks a focused set of code issues. Formatting differences and lint errors block the commit; lint warnings remain visible without blocking. The hook never rewrites the working tree, updates the index, or changes bundle identifiers. A rejection leaves both staged and unstaged changes intact so you can correct the staged configuration deliberately. Run `python3 -B -u script/test-pre-commit.py` after changing the hook.
 
 The app uses App Sandbox and outgoing network access, including Debug's connection to InjectionIII. Debug alone disables library validation for injected code; Release retains library validation. Neither configuration permits incoming server connections. There is no current CloudKit/iCloud sync, push registration, or file import/export feature; add a capability only with its implementation and verification.
 
