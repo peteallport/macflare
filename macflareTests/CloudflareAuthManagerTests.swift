@@ -37,7 +37,7 @@ struct CloudflareAuthManagerTests {
             revocationEndpoint: URL(string: "https://oauth.example.test/revoke")!,
             apiBaseURL: URL(string: "https://api.example.test/client/v4")!,
             redirectURI: "macflare://oauth-callback",
-            scopes: ["account.read", "offline_access"]
+            scopes: ["account-settings.read", "offline_access"]
         )
         let manager = CloudflareAuthManager(
             authorizer: authorizer,
@@ -56,7 +56,7 @@ struct CloudflareAuthManagerTests {
         expired: Bool = false
     ) -> AuthToken {
         AuthToken(accessToken: access, refreshToken: refresh, tokenType: "Bearer",
-                  scope: "account.read offline_access",
+                  scope: "account-settings.read offline_access",
                   expiresAt: Self.instant.addingTimeInterval(expired ? -1 : 3_600))
     }
 
@@ -86,7 +86,7 @@ struct CloudflareAuthManagerTests {
         #expect(query.first { $0.name == "code_challenge" }?.value == PKCE.makeChallenge(for: verifier))
         #expect(query.first { $0.name == "code_challenge_method" }?.value == "S256")
         #expect(query.first { $0.name == "response_type" }?.value == "code")
-        #expect(query.first { $0.name == "scope" }?.value == "account.read offline_access")
+        #expect(query.first { $0.name == "scope" }?.value == "account-settings.read offline_access")
         #expect(fixture.authorizer.callbackScheme == "macflare")
         #expect(requests.last?.url?.path == "/client/v4/accounts")
         #expect(requests.last?.value(forHTTPHeaderField: "Authorization") == "Bearer new-access")
@@ -588,7 +588,7 @@ private struct OAuthStubResponse: Sendable {
     )
     static let refreshed = OAuthStubResponse(
         status: 200,
-        body: #"{"access_token":"new-access","refresh_token":"new-refresh","token_type":"Bearer","scope":"account.read offline_access","expires_in":3600}"#
+        body: #"{"access_token":"new-access","refresh_token":"new-refresh","token_type":"Bearer","scope":"account-settings.read offline_access","expires_in":3600}"#
     )
     static let invalidGrant = OAuthStubResponse(
         status: 400,

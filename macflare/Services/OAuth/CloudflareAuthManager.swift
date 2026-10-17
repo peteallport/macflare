@@ -42,7 +42,7 @@ final class CloudflareAuthManager {
         now: @escaping @MainActor () -> Date = Date.init
     ) {
         self.authorizer = authorizer ?? WebAuthenticationSessionAuthorizer()
-        self.keychain = keychain ?? KeychainStore()
+        self.keychain = keychain ?? KeychainStore(clientID: configuration.clientID)
         self.urlSession = urlSession
         self.configuration = configuration
         self.now = now

@@ -43,6 +43,13 @@ struct KeychainStore: AuthTokenStoring {
         self.account = account
     }
 
+    /// Each OAuth registration owns a separate token. In particular, development
+    /// sign-out must never delete or refresh the production registration's session.
+    /// The legacy unscoped item is deliberately left alone: its client is unknown.
+    init(clientID: String, service: String = "com.macflare.oauth") {
+        self.init(service: service, account: "cloudflare-token:\(clientID)")
+    }
+
     private var baseQuery: [String: Any] {
         [
             kSecClass as String: kSecClassGenericPassword,

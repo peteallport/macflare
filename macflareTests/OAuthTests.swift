@@ -14,7 +14,7 @@ struct OAuthTests {
 
     @Test func selfManagedClientUsesCurrentScopesAndLoopbackRedirect() {
         let config = CloudflareOAuthConfig(clientID: "test-client")
-        #expect(config.scopes == ["account.read", "offline_access"])
+        #expect(config.scopes == ["account-settings.read", "offline_access"])
         #expect(config.redirectURI == "http://127.0.0.1:8976/oauth/callback")
         #expect(config.isConfigured)
         #expect(!CloudflareOAuthConfig(clientID: "").isConfigured)
@@ -78,7 +78,7 @@ struct OAuthTests {
 
     @Test func authTokenDecodesExpiresIntoAbsoluteDate() throws {
         let json = Data("""
-        {"access_token":"abc","refresh_token":"def","token_type":"bearer","scope":"account:read","expires_in":3600}
+        {"access_token":"abc","refresh_token":"def","token_type":"bearer","scope":"account-settings.read","expires_in":3600}
         """.utf8)
         let token = try JSONDecoder().decode(AuthToken.self, from: json)
         #expect(token.accessToken == "abc")
@@ -103,7 +103,7 @@ struct OAuthTests {
             accessToken: "a",
             refreshToken: "r",
             tokenType: "Bearer",
-            scope: "account:read",
+            scope: "account-settings.read",
             expiresAt: Date().addingTimeInterval(3600)
         )
         let data = try JSONEncoder().encode(original)
@@ -133,7 +133,7 @@ struct OAuthTests {
             accessToken: "access",
             refreshToken: "refresh",
             tokenType: "Bearer",
-            scope: "account:read",
+            scope: "account-settings.read",
             expiresAt: Date().addingTimeInterval(3600)
         )
         try store.save(token)
@@ -143,5 +143,41 @@ struct OAuthTests {
 
         try store.delete()
         #expect(try store.load() == nil)
+    }
+
+    @Test func keychainClientIsolationPreservesProductionAndLegacySessions() throws {
+        let service = "com.macflare.tests.\(UUID().uuidString)"
+        let development = KeychainStore(clientID: "test-development", service: service)
+        let production = KeychainStore(clientID: "test-production", service: service)
+        let legacy = KeychainStore(service: service)
+        defer {
+            try? development.delete()
+            try? production.delete()
+            try? legacy.delete()
+        }
+
+        func token(_ name: String) -> AuthToken {
+            AuthToken(accessToken: "\(name)-access", refreshToken: "\(name)-refresh",
+                      tokenType: "Bearer", scope: "account-settings.read offline_access",
+                      expiresAt: Date(timeIntervalSince1970: 2_000_000_000))
+        }
+        let legacyToken = token("legacy")
+        let developmentToken = token("development")
+        let productionToken = token("production")
+        try legacy.save(legacyToken)
+
+        // A registration must never adopt an older item whose client is unknown.
+        #expect(try development.load() == nil)
+        #expect(try production.load() == nil)
+        try development.save(developmentToken)
+        try production.save(productionToken)
+        #expect(try development.load() == developmentToken)
+        #expect(try production.load() == productionToken)
+        #expect(try legacy.load() == legacyToken)
+
+        try development.delete()
+        #expect(try development.load() == nil)
+        #expect(try production.load() == productionToken)
+        #expect(try legacy.load() == legacyToken)
     }
 }

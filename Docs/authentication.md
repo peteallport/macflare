@@ -9,7 +9,7 @@ Checked against Cloudflare's documentation and the Peter Allport account dashboa
 1. Open **Manage account → OAuth clients → Create client** in the account that owns MacFlare.
 2. Use **Code** response type, **Authorization Code + Refresh Token** grants, and **None (PKCE)** token authentication.
 3. Register **`http://127.0.0.1:8976/oauth/callback`** exactly. The dashboard rejected the PR's custom-scheme approach with “URL must start with http:// or https://”. It accepted the loopback URL in the form. Only successful client creation establishes saved registration.
-4. Select **Account Settings → Read** only. MacFlare requests `account.read offline_access`; self-managed clients require dot-delimited API scopes. Wrangler's first-party colon-delimited scopes are not suitable. `offline_access` is managed by the refresh-token grant during registration.
+4. Select **Account Settings → Read** only. MacFlare requests `account-settings.read offline_access`. The live registered-client scope popup confirmed this identifier; the documentation's illustrative `account.read` was rejected with `invalid_scope`. Self-managed clients require dot-delimited API scopes. Wrangler's first-party colon-delimited scopes are not suitable. `offline_access` is managed by the refresh-token grant during registration.
 5. Keep visibility **private** for development. Account members can authorize it. Public distribution is a separate, irreversible promotion requiring Cloudflare's domain-ownership and app-metadata checks.
 6. Pass the returned public client ID through `CLOUDFLARE_CLIENT_ID` at build time. It is not a secret. Do not use Wrangler's client ID or put any access/refresh token in source or build settings.
 
@@ -17,13 +17,19 @@ The browser callback listener binds only `127.0.0.1`, opens the browser after bi
 
 ## Build and run
 
-Use `script/build_and_run.sh` or the Codex Run action. The script uses this worktree's own DerivedData and accepts additional Xcode build arguments after the mode:
+Use `script/build_and_run.sh` or the Codex Run action. The script uses this worktree's own DerivedData and the private client in `Config/OAuthDevelopment.xcconfig`. It accepts an explicit client override and additional Xcode build arguments after the mode:
 
 ```sh
 CLOUDFLARE_CLIENT_ID='<registered-public-client-id>' ./script/build_and_run.sh --verify
 ```
 
 Use a local signing configuration suitable for the existing project entitlements. Passing signing overrides to Xcode does not require editing `project.pbxproj`. Debug/Release compilation does not prove registration, consent, Keychain access, API permissions, refresh, or revocation.
+
+## Production registration
+
+Use a separate **MacFlare Production** client with the same PKCE settings, redirect and minimal scopes. Supply its public ID explicitly for Release builds; the development configuration is only selected by the Debug run script. Each client ID has a separate Keychain entry, so development refresh and sign-out cannot affect a production session. Legacy unscoped credentials are left untouched because their owning client is unknown.
+
+Production registration starts private. Public availability additionally requires a client URL, logo, app name, and DNS TXT publisher verification. Verify the intended publisher domain before submission: Cloudflare says the verified domain cannot be changed, and public visibility cannot revert to private. Those production registration and publication steps remain separate from the approved development client.
 
 ## Verification
 

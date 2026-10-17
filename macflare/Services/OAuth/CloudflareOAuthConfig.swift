@@ -18,7 +18,7 @@ struct CloudflareOAuthConfig: Sendable {
 
     /// Self-managed clients use dot-delimited scopes; Wrangler's legacy colon scopes
     /// are not accepted. Request only account listing and refresh-token access.
-    var scopes = ["account.read", "offline_access"]
+    var scopes = ["account-settings.read", "offline_access"]
 
     var callbackURLScheme: String { URL(string: redirectURI)?.scheme ?? "app.macflare" }
     var scopeString: String { scopes.joined(separator: " ") }
