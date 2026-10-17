@@ -1,6 +1,6 @@
 # Authentication verification — October 16, 2026
 
-Reviewed PR #6 at `6feb2f2c0436838d856eea91ffea106c42779893` in an isolated worktree. No merge performed. The original checkout's signing edits were unchanged (before/after binary-diff SHA-256 `25a18c60de7894d5d7761072d901027d78199307050de5628b11c77fce0e5d74`). No Xcode project or tracked signing-entitlement edits were needed.
+Reviewed PR #6 at `6feb2f2c0436838d856eea91ffea106c42779893` in an isolated worktree. No merge performed. The original checkout's signing edits were unchanged, verified by comparing the before/after diff hashes. No Xcode project or tracked signing-entitlement edits were needed.
 
 ## Verified
 
@@ -10,7 +10,7 @@ Reviewed PR #6 at `6feb2f2c0436838d856eea91ffea106c42779893` in an isolated work
 - Real local socket callback test: loopback listener rejects a wrong state, accepts the matching callback, and cancels cleanly.
 - Unique test-only Keychain round-trip and client isolation: removing development credentials preserves production and legacy entries. App-session tests inject an in-memory store and intercept URLSession requests.
 - Actual app launch using ad-hoc signing and a temporary sandbox/network-only entitlement file. The missing-client error was checked before registration; the configured build was then used for the live checks below.
-- Created **MacFlare Development**, private, with Code, Authorization Code + Refresh Token, None (PKCE), and required Account Settings Read permission. Public client ID: `f7c5d38ce7449d302ff8255b7394c99c`.
+- Created **MacFlare Development**, private, with Code, Authorization Code + Refresh Token, None (PKCE), and required Account Settings Read permission. Its public client ID is in `Config/OAuthDevelopment.xcconfig`.
 - The live Cloudflare client form rejected custom URI schemes. Registration and successful authorization confirmed `http://127.0.0.1:8976/oauth/callback`.
 - The registered-client scope popup identified **`account-settings.read`** plus `offline_access`. The documentation's illustrative `account.read` was rejected with `invalid_scope`; source and tests now use the live identifier.
 
@@ -19,7 +19,7 @@ Reviewed PR #6 at `6feb2f2c0436838d856eea91ffea106c42779893` in an isolated work
 Using the configured, sandboxed development build and real Cloudflare services:
 
 1. Consent displayed Account Settings Read and Background Access; authorization returned through the local callback.
-2. MacFlare loaded the Peter Allport account from Cloudflare. The account-list Refresh action succeeded.
+2. MacFlare loaded the authorized development account from Cloudflare. The account-list Refresh action succeeded.
 3. **Development → Refresh Cloudflare Session** forced a real refresh grant and reloaded the account without errors.
 4. Relaunch restored the refreshed session from Keychain and loaded the account again.
 5. Sign Out removed the visible account and saved session. No revocation failure notice appeared after the request timeout window; the app treats only HTTP 2xx as confirmed revocation.

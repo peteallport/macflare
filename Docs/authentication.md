@@ -4,7 +4,7 @@ MacFlare uses a public OAuth client (PKCE S256, no client secret) to read Cloudf
 
 ## Register a development client
 
-Checked against Cloudflare's documentation and the Peter Allport account dashboard on October 16, 2026:
+Checked against Cloudflare's documentation and a live development-account dashboard on October 16, 2026:
 
 1. Open **Manage account → OAuth clients → Create client** in the account that owns MacFlare.
 2. Use **Code** response type, **Authorization Code + Refresh Token** grants, and **None (PKCE)** token authentication.
