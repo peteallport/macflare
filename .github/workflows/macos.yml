@@ -86,9 +86,10 @@ jobs:
               printf 'Swift configuration must be a regular file: %s\n' "$config" >&2
               exit 1
             fi
-            if [[ "$config" == *.swiftlint.yml ]]; then
-              swiftlint rules --config "$config" > /dev/null
-            fi
+            case "$config" in
+              *.swiftformat) swiftformat --config "./$config" --rules > /dev/null ;;
+              *.swiftlint.yml) swiftlint rules --config "./$config" > /dev/null ;;
+            esac
           done < "$RUNNER_TEMP/macflare-validation-configs"
           swiftformat macflare macflareTests macflareUITests --lint --cache ignore
           swiftlint lint --quiet --no-cache

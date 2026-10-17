@@ -65,6 +65,14 @@ if [ -s "$check_dir/swift-paths" ] || [ -s "$check_dir/config-paths" ]; then
             exit 1
         fi
         case "$config" in
+            *.swiftformat)
+                # Parse configs even when their directories contain no Swift files.
+                if ! swiftformat --config "$check_dir/tree/$config" --rules > "$check_dir/swiftformat-config" 2>&1; then
+                    cat "$check_dir/swiftformat-config" >&2
+                    printf 'Commit blocked: SwiftFormat failed to validate staged configuration: %s\n' "$config" >&2
+                    exit 1
+                fi
+                ;;
             *.swiftlint.yml)
                 # Auto-discovery silently falls back to defaults on malformed YAML.
                 if ! swiftlint rules --config "$check_dir/tree/$config" > "$check_dir/swiftlint-config" 2>&1; then

@@ -478,6 +478,36 @@ def nested_formatter_symlink_cases():
     print('PASS existing nested formatter symlink rejected during Swift-only staging')
 
 
+def formatter_config_validation_cases():
+    config = 'Nested/.swiftformat'
+    blocked = f'Commit blocked: SwiftFormat failed to validate staged configuration: {config}'
+    for name, invalid in (
+        ('unknown rule', '--rules noSuchFormattingRule\n'),
+        ('unknown option', '--no-such-format-option true\n'),
+        ('malformed option value', '--indent banana\n'),
+    ):
+        with fixture() as test:
+            # No indexed Swift file is beneath this config, so source discovery
+            # alone would never parse it. The staged version must still win.
+            test.stage(config, invalid)
+            test.write(config, FORMAT_CONFIG)
+            test.check_hook(blocked, failure=True)
+        print('PASS nested formatter ' + name + ' rejected without nested Swift; valid working config preserved')
+
+    with fixture() as test:
+        # Applying this config to the unrelated root source would demand a header.
+        test.stage(config, '--rules fileHeader\n--header Nested files only\n')
+        test.write(config, '--rules noSuchFormattingRule\n')
+        test.check_hook('Staged checks passed')
+    print('PASS valid staged nested formatter config ignores invalid working config and preserves source scope')
+
+    with fixture() as test:
+        test.git('rm', '--', 'Example.swift')
+        test.stage(config, '--rules noSuchFormattingRule\n')
+        test.check_hook(blocked, failure=True)
+    print('PASS invalid nested formatter config rejected with no Swift files in the index')
+
+
 def actual_commits(linked=False):
     with fixture() as test:
         if linked:
@@ -524,6 +554,7 @@ if __name__ == '__main__':
     swift_cases()
     config_only_cases()
     nested_formatter_symlink_cases()
+    formatter_config_validation_cases()
     actual_commits()
     actual_commits(linked=True)
     print('All staged-validation fixtures passed; disposable repositories removed.')
