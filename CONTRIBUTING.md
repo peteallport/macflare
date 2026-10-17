@@ -82,6 +82,8 @@ The app uses App Sandbox and outgoing network access, including Debug's connecti
 
 ## Project structure and conventions
 
+Repository instructions for coding agents live in [AGENTS.md](AGENTS.md).
+
 ```text
 macflare/
 ├── Model/             # SwiftData model

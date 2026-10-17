@@ -1,8 +1,3 @@
----
-description: macflare engineering and product baseline
-globs:
-alwaysApply: true
----
 # macflare
 
 Macflare is a native macOS prototype for Cloudflare power users. The welcome screen is implemented, but the login button is a placeholder; authentication and Cloudflare API operations are not implemented.
