@@ -418,6 +418,66 @@ def config_only_cases():
     print('PASS nested-only linter configuration symlink is rejected')
 
 
+def nested_formatter_symlink_cases():
+    config = 'Nested/.swiftformat'
+    blocked = f'staged {config} is missing or not a regular file'
+    permissive = FORMAT_CONFIG.replace('spaceAroundOperators', 'trailingSpace')
+
+    for kind in ('external', 'broken'):
+        with fixture() as test:
+            test.stage('Nested/Unchanged.swift', 'let value=1\n')
+            test.git('-c', 'core.hooksPath=/dev/null', 'commit', '-qm', 'Fixture formatter baseline')
+            external = test.root.parent / 'external.swiftformat'
+            if kind == 'external':
+                external.write_text(permissive)
+            before_external = external.read_bytes() if external.exists() else None
+            (test.root / config).symlink_to(external)
+            test.git('add', '--', config)
+            test.check_hook(blocked, failure=True)
+            assert (external.read_bytes() if external.exists() else None) == before_external
+        print('PASS config-only nested formatter ' + kind + ' symlink rejected; external target preserved')
+
+    with fixture() as test:
+        test.stage('Nested/Unchanged.swift', 'let value=1\n')
+        test.git('-c', 'core.hooksPath=/dev/null', 'commit', '-qm', 'Fixture partial formatter baseline')
+        external = test.root.parent / 'external.swiftformat'
+        external.write_text(permissive)
+        before_external = external.read_bytes()
+        (test.root / config).symlink_to(external)
+        test.git('add', '--', config)
+        (test.root / config).unlink()
+        test.write(config, FORMAT_CONFIG)
+        test.check_hook(blocked, failure=True)
+        assert external.read_bytes() == before_external
+    print('PASS staged nested formatter symlink rejected despite regular working config')
+
+    with fixture() as test:
+        test.stage('Nested/Unchanged.swift', 'let value=1\n')
+        test.git('-c', 'core.hooksPath=/dev/null', 'commit', '-qm', 'Fixture regular formatter baseline')
+        test.stage(config, permissive)
+        external = test.root.parent / 'external.swiftformat'
+        external.write_text(FORMAT_CONFIG)
+        before_external = external.read_bytes()
+        (test.root / config).unlink()
+        (test.root / config).symlink_to(external)
+        test.check_hook('Staged checks passed')
+        assert external.read_bytes() == before_external
+    print('PASS staged regular nested formatter config wins over unstaged working symlink')
+
+    with fixture() as test:
+        test.stage('Nested/Changed.swift', 'let value=1\n')
+        external = test.root.parent / 'external.swiftformat'
+        external.write_text(permissive)
+        before_external = external.read_bytes()
+        (test.root / config).symlink_to(external)
+        test.git('add', '--', config)
+        test.git('-c', 'core.hooksPath=/dev/null', 'commit', '-qm', 'Fixture existing formatter symlink')
+        test.stage('Nested/Changed.swift', 'let value=2\n')
+        test.check_hook(blocked, failure=True)
+        assert external.read_bytes() == before_external
+    print('PASS existing nested formatter symlink rejected during Swift-only staging')
+
+
 def actual_commits(linked=False):
     with fixture() as test:
         if linked:
@@ -463,6 +523,7 @@ if __name__ == '__main__':
     index_cases()
     swift_cases()
     config_only_cases()
+    nested_formatter_symlink_cases()
     actual_commits()
     actual_commits(linked=True)
     print('All staged-validation fixtures passed; disposable repositories removed.')

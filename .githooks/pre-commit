@@ -57,20 +57,24 @@ if [ -s "$check_dir/swift-paths" ] || [ -s "$check_dir/config-paths" ]; then
             exit 1
         fi
     done
-    # Auto-discovery silently falls back to defaults on malformed YAML.
-    # Validate each staged config first, retaining nested discovery during lint.
-    git ls-files --cached -z -- ':(glob)**/.swiftlint.yml' > "$check_dir/lint-config-paths"
+    # Reject links for every staged config, retaining nested discovery during lint.
+    git ls-files --cached -z -- ':(glob)**/.swiftformat' ':(glob)**/.swiftlint.yml' > "$check_dir/validation-config-paths"
     while IFS= read -r -d '' config; do
         if [ -L "$check_dir/tree/$config" ] || [ ! -f "$check_dir/tree/$config" ]; then
             printf 'Commit blocked: staged %s is missing or not a regular file.\n' "$config" >&2
             exit 1
         fi
-        if ! swiftlint rules --config "$check_dir/tree/$config" > "$check_dir/swiftlint-config" 2>&1; then
-            cat "$check_dir/swiftlint-config" >&2
-            printf 'Commit blocked: SwiftLint failed to validate staged configuration: %s\n' "$config" >&2
-            exit 1
-        fi
-    done < "$check_dir/lint-config-paths"
+        case "$config" in
+            *.swiftlint.yml)
+                # Auto-discovery silently falls back to defaults on malformed YAML.
+                if ! swiftlint rules --config "$check_dir/tree/$config" > "$check_dir/swiftlint-config" 2>&1; then
+                    cat "$check_dir/swiftlint-config" >&2
+                    printf 'Commit blocked: SwiftLint failed to validate staged configuration: %s\n' "$config" >&2
+                    exit 1
+                fi
+                ;;
+        esac
+    done < "$check_dir/validation-config-paths"
 fi
 
 if [ -s "$check_dir/project-path" ]; then
