@@ -340,6 +340,84 @@ def swift_cases():
     print('PASS snapshot failure blocks and cleans temporary files')
 
 
+def config_only_cases():
+    for staged_rule, failure in (('trailingSpace', False), ('spaceAroundOperators', True)):
+        with fixture() as test:
+            # Commit a source/config baseline, then stage only the configuration.
+            test.stage('.swiftformat', FORMAT_CONFIG.replace('spaceAroundOperators', 'trailingSpace'))
+            test.stage('Example.swift', 'let value=1\n')
+            test.git('-c', 'core.hooksPath=/dev/null', 'commit', '-qm', 'Fixture formatter baseline')
+            test.stage('.swiftformat', FORMAT_CONFIG.replace('spaceAroundOperators', staged_rule) + '# staged\n')
+            test.write('.swiftformat', FORMAT_CONFIG.replace('spaceAroundOperators',
+                       'trailingSpace' if failure else 'spaceAroundOperators'))
+            test.write('Example.swift', 'let value = 1\n' if failure else 'unfinished working source')
+            test.check_hook('SwiftFormat failed' if failure else 'Staged checks passed', failure=failure)
+        print('PASS config-only formatter change checks unchanged staged Swift: ' + staged_rule)
+    for severity in ('warning', 'error'):
+        with fixture() as test:
+            test.stage('Example.swift', 'let value = 1 \n')
+            test.git('-c', 'core.hooksPath=/dev/null', 'commit', '-qm', 'Fixture linter baseline')
+            test.stage('.swiftlint.yml', LINT_CONFIG.replace('warning', severity) + '# staged\n')
+            test.write('.swiftlint.yml', LINT_CONFIG.replace('warning', 'warning' if severity == 'error' else 'error'))
+            test.write('Example.swift', 'let value = 1\n')
+            test.check_hook('SwiftLint failed' if severity == 'error' else 'warning: Trailing Whitespace',
+                            failure=severity == 'error')
+        print('PASS config-only linter change checks unchanged staged Swift: ' + severity)
+    for config, valid, malformed, message in (
+        ('.swiftformat', FORMAT_CONFIG, '--rules noSuchFormattingRule\n', 'SwiftFormat failed'),
+        ('.swiftlint.yml', LINT_CONFIG, 'only_rules: [\n', 'SwiftLint failed'),
+    ):
+        with fixture() as test:
+            test.stage(config, malformed)
+            test.write(config, valid)
+            test.check_hook(message, failure=True)
+        print('PASS malformed staged root config is rejected despite valid working config: ' + config)
+        with fixture() as test:
+            test.git('rm', '--', config)
+            test.write(config, valid)
+            test.check_hook(f'staged {config} is missing or not a regular file', failure=True)
+        print('PASS config-only root deletion is rejected despite existing working config: ' + config)
+    for config, parent, nested, source, message in (
+        ('.swiftformat', FORMAT_CONFIG.replace('spaceAroundOperators', 'trailingSpace'),
+         FORMAT_CONFIG, 'let value=1\n', 'SwiftFormat failed'),
+        ('.swiftlint.yml', LINT_CONFIG, LINT_CONFIG.replace('warning', 'error'),
+         'let value = 1 \n', 'SwiftLint failed'),
+    ):
+        with fixture() as test:
+            test.stage(config, parent)
+            test.stage('Nested/Unchanged.swift', source)
+            test.git('-c', 'core.hooksPath=/dev/null', 'commit', '-qm', 'Fixture nested configuration baseline')
+            test.stage('Nested/' + config, nested)
+            test.write('Nested/' + config, parent)
+            test.check_hook(message, failure=True)
+        print('PASS nested config-only addition checks unchanged staged Swift: ' + config)
+        with fixture() as test:
+            test.stage(config, nested)
+            test.stage('Nested/' + config, parent)
+            test.stage('Nested/Unchanged.swift', source)
+            test.git('-c', 'core.hooksPath=/dev/null', 'commit', '-qm', 'Fixture nested deletion baseline')
+            test.git('rm', '--', 'Nested/' + config)
+            test.write('Nested/' + config, parent)
+            test.check_hook(message, failure=True)
+        print('PASS nested config-only deletion applies staged parent config: ' + config)
+
+
+    with fixture() as test:
+        test.stage('Nested/Unchanged.swift', 'let value = 1\n')
+        test.git('-c', 'core.hooksPath=/dev/null', 'commit', '-qm', 'Fixture nested YAML baseline')
+        test.stage('Nested/.swiftlint.yml', 'only_rules: [\n')
+        test.write('Nested/.swiftlint.yml', LINT_CONFIG)
+        test.check_hook('SwiftLint failed to validate staged configuration: Nested/.swiftlint.yml', failure=True)
+    print('PASS malformed nested-only linter configuration is rejected without falling back')
+    with fixture() as test:
+        test.stage('Nested/Unchanged.swift', 'let value = 1\n')
+        test.git('-c', 'core.hooksPath=/dev/null', 'commit', '-qm', 'Fixture nested symlink baseline')
+        (test.root / 'Nested/.swiftlint.yml').symlink_to('../.swiftlint.yml')
+        test.git('add', '--', 'Nested/.swiftlint.yml')
+        test.check_hook('staged Nested/.swiftlint.yml is missing or not a regular file', failure=True)
+    print('PASS nested-only linter configuration symlink is rejected')
+
+
 def actual_commits(linked=False):
     with fixture() as test:
         if linked:
@@ -384,6 +462,7 @@ if __name__ == '__main__':
     artifact_cases()
     index_cases()
     swift_cases()
+    config_only_cases()
     actual_commits()
     actual_commits(linked=True)
     print('All staged-validation fixtures passed; disposable repositories removed.')

@@ -58,6 +58,7 @@ xcodebuild build \
   CODE_SIGN_IDENTITY=- CODE_SIGNING_REQUIRED=YES CODE_SIGNING_ALLOWED=YES DEVELOPMENT_TEAM=
 
 swiftformat macflare macflareTests macflareUITests --lint --cache ignore
+swiftlint rules --config .swiftlint.yml > /dev/null
 swiftlint lint --quiet --no-cache
 python3 -B -u script/test-pre-commit.py
 ```
@@ -80,7 +81,7 @@ The checked-in project has generic bundle identifiers and empty developer team/s
 
 Keep personal Xcode signing changes out of commits. Prefer command-line build setting overrides for local signing. If Xcode edits `project.pbxproj`, use selective staging to commit the intended shared changes while leaving the existing personal signing edits in the working tree. Avoid restoring the whole project file or staging it wholesale to address a hook failure.
 
-The [pre-commit hook](.githooks/pre-commit) requires macOS `plutil`, Python 3, and the Swift tools above when staged Swift files need checking. It validates **staged contents only**, including staged formatter/linter configuration, so personal working edits do not affect the result. It rejects signing artifacts and nonempty developer team, provisioning profile, or signing identity settings, including conditional build settings. It also checks project syntax and distinct literal bundle identifiers across targets.
+The [pre-commit hook](.githooks/pre-commit) requires macOS `plutil`, Python 3, and the Swift tools above when staged Swift files need checking. It validates **staged contents only**, including staged formatter/linter configuration, so personal working edits do not affect the result. A staged change to a root or nested `.swiftformat` or `.swiftlint.yml` causes the hook to check all Swift sources in the index, even when no Swift file changed. It rejects signing artifacts and nonempty developer team, provisioning profile, or signing identity settings, including conditional build settings. It also checks project syntax and distinct literal bundle identifiers across targets.
 
 SwiftFormat checks whitespace without rewriting files; SwiftLint checks a focused set of code issues. Formatting differences and lint errors block the commit; lint warnings remain visible without blocking. The hook never rewrites the working tree, updates the index, or changes bundle identifiers. A rejection leaves both staged and unstaged changes intact so you can correct the staged configuration deliberately. Run `python3 -B -u script/test-pre-commit.py` after changing the hook.
 

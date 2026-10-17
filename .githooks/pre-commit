@@ -24,15 +24,23 @@ while IFS= read -r -d '' path; do
     esac
 done < "$check_dir/paths"
 
-git diff --cached --name-only --no-renames --diff-filter=ACMT -z -- '*.swift' > "$check_dir/swift-paths"
+# Configuration changes can affect unchanged sources. Include deletions and
+# nested configurations, and validate every Swift file in the active index.
+git diff --cached --name-only --no-renames -z -- \
+    ':(glob)**/.swiftformat' ':(glob)**/.swiftlint.yml' > "$check_dir/config-paths"
+if [ -s "$check_dir/config-paths" ]; then
+    git ls-files --cached -z -- '*.swift' > "$check_dir/swift-paths"
+else
+    git diff --cached --name-only --no-renames --diff-filter=ACMT -z -- '*.swift' > "$check_dir/swift-paths"
+fi
 project='macflare.xcodeproj/project.pbxproj'
 git diff --cached --name-only -z -- "$project" > "$check_dir/project-path"
-if [ ! -s "$check_dir/project-path" ] && [ ! -s "$check_dir/swift-paths" ]; then
+if [ ! -s "$check_dir/project-path" ] && [ ! -s "$check_dir/swift-paths" ] && [ ! -s "$check_dir/config-paths" ]; then
     echo 'No staged project changes or Swift files; signing artifact checks passed.'
     exit 0
 fi
 
-if [ -s "$check_dir/swift-paths" ]; then
+if [ -s "$check_dir/swift-paths" ] || [ -s "$check_dir/config-paths" ]; then
     for tool in swiftformat swiftlint; do
         if ! command -v "$tool" >/dev/null 2>&1; then
             printf 'Commit blocked: required tool %s is unavailable.\n' "$tool" >&2
@@ -49,6 +57,20 @@ if [ -s "$check_dir/swift-paths" ]; then
             exit 1
         fi
     done
+    # Auto-discovery silently falls back to defaults on malformed YAML.
+    # Validate each staged config first, retaining nested discovery during lint.
+    git ls-files --cached -z -- ':(glob)**/.swiftlint.yml' > "$check_dir/lint-config-paths"
+    while IFS= read -r -d '' config; do
+        if [ -L "$check_dir/tree/$config" ] || [ ! -f "$check_dir/tree/$config" ]; then
+            printf 'Commit blocked: staged %s is missing or not a regular file.\n' "$config" >&2
+            exit 1
+        fi
+        if ! swiftlint rules --config "$check_dir/tree/$config" > "$check_dir/swiftlint-config" 2>&1; then
+            cat "$check_dir/swiftlint-config" >&2
+            printf 'Commit blocked: SwiftLint failed to validate staged configuration: %s\n' "$config" >&2
+            exit 1
+        fi
+    done < "$check_dir/lint-config-paths"
 fi
 
 if [ -s "$check_dir/project-path" ]; then
