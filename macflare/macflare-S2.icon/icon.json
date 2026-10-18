@@ -1,0 +1,325 @@
+{
+  "features" : [
+    "refractivity",
+    "specular-location"
+  ],
+  "fill" : {
+    "automatic-gradient" : "extended-srgb:0.96078,0.95294,0.93333,1.00000"
+  },
+  "groups" : [
+    {
+      "layers" : [
+        {
+          "fill-specializations" : [
+            {
+              "appearance" : "tinted",
+              "value" : "system-dark"
+            }
+          ],
+          "glass" : false,
+          "image-name" : "04-Smile.svg",
+          "name" : "04-Smile"
+        },
+        {
+          "fill-specializations" : [
+            {
+              "appearance" : "tinted",
+              "value" : "system-dark"
+            }
+          ],
+          "glass" : false,
+          "image-name" : "03-Flare-Eyes.svg",
+          "name" : "03-Flare-Eyes"
+        }
+      ],
+      "name" : "Face — flare eyes and thin smile",
+      "position-specializations" : [
+        {
+          "idiom" : "watchOS",
+          "value" : {
+            "scale" : 1,
+            "translation-in-points" : [
+              24,
+              -24
+            ]
+          }
+        }
+      ],
+      "refractivity" : {
+        "depth" : 0,
+        "enabled" : false,
+        "strength" : 0
+      },
+      "shadow" : {
+        "kind" : "neutral",
+        "opacity" : 0
+      },
+      "translucency" : {
+        "enabled" : false,
+        "value" : 0
+      }
+    },
+    {
+      "layers" : [
+        {
+          "fill-specializations" : [
+            {
+              "value" : {
+                "solid" : "extended-srgb:1.00000,0.77647,0.35294,1.00000"
+              }
+            },
+            {
+              "appearance" : "dark",
+              "value" : {
+                "solid" : "extended-srgb:0.98039,0.68235,0.25098,1.00000"
+              }
+            },
+            {
+              "appearance" : "tinted",
+              "value" : {
+                "solid" : "extended-srgb:0.65882,0.65882,0.65882,1.00000"
+              }
+            }
+          ],
+          "image-name" : "02-Gold-Cloud.svg",
+          "name" : "02-Gold-Cloud"
+        }
+      ],
+      "name" : "Foreground — inset gold cloud",
+      "position-specializations" : [
+        {
+          "idiom" : "watchOS",
+          "value" : {
+            "scale" : 1,
+            "translation-in-points" : [
+              24,
+              -24
+            ]
+          }
+        }
+      ],
+      "refractivity" : {
+        "depth" : 0.1,
+        "enabled" : true,
+        "strength" : 0.22
+      },
+      "shadow-specializations" : [
+        {
+          "value" : {
+            "kind" : "layer-color",
+            "opacity" : 0.18
+          }
+        },
+        {
+          "appearance" : "dark",
+          "value" : {
+            "kind" : "neutral",
+            "opacity" : 0.18
+          }
+        },
+        {
+          "appearance" : "tinted",
+          "value" : {
+            "kind" : "neutral",
+            "opacity" : 0.18
+          }
+        }
+      ],
+      "specular" : "inside",
+      "translucency" : {
+        "enabled" : true,
+        "value" : 0.08
+      }
+    },
+    {
+      "blur-material-specializations" : [
+        {
+          "value" : 0.04
+        },
+        {
+          "appearance" : "dark",
+          "value" : 0.12
+        },
+        {
+          "appearance" : "tinted",
+          "value" : 0.12
+        }
+      ],
+      "layers" : [
+        {
+          "image-name" : "01-Orange-Cloud-Light.svg",
+          "name" : "01-Orange-Cloud — default light",
+          "opacity-specializations" : [
+            {
+              "value" : 1
+            },
+            {
+              "appearance" : "dark",
+              "value" : 0
+            },
+            {
+              "appearance" : "tinted",
+              "value" : 0
+            }
+          ]
+        },
+        {
+          "fill-specializations" : [
+            {
+              "value" : "automatic"
+            },
+            {
+              "appearance" : "dark",
+              "value" : "automatic"
+            },
+            {
+              "appearance" : "tinted",
+              "value" : "system-light"
+            }
+          ],
+          "hidden" : false,
+          "image-name" : "01-Orange-Cloud.svg",
+          "name" : "01-Orange-Cloud — dark and mono",
+          "opacity-specializations" : [
+            {
+              "value" : 0
+            },
+            {
+              "appearance" : "dark",
+              "value" : 1
+            },
+            {
+              "appearance" : "tinted",
+              "value" : 1
+            }
+          ]
+        }
+      ],
+      "name" : "Middle — orange cloud with transparency gradient",
+      "position-specializations" : [
+        {
+          "idiom" : "watchOS",
+          "value" : {
+            "scale" : 1,
+            "translation-in-points" : [
+              24,
+              -24
+            ]
+          }
+        }
+      ],
+      "refractivity" : {
+        "depth" : 0.06,
+        "enabled" : true,
+        "strength" : 0.16
+      },
+      "shadow-specializations" : [
+        {
+          "value" : {
+            "kind" : "layer-color",
+            "opacity" : 0.23
+          }
+        },
+        {
+          "appearance" : "dark",
+          "value" : {
+            "kind" : "neutral",
+            "opacity" : 0.23
+          }
+        },
+        {
+          "appearance" : "tinted",
+          "value" : {
+            "kind" : "neutral",
+            "opacity" : 0.23
+          }
+        }
+      ],
+      "specular" : "inside",
+      "translucency" : {
+        "enabled" : true,
+        "value" : 0.08
+      }
+    },
+    {
+      "layers" : [
+        {
+          "fill-specializations" : [
+            {
+              "appearance" : "tinted",
+              "value" : {
+                "solid" : "extended-srgb:0.81569,0.81569,0.81569,1.00000"
+              }
+            }
+          ],
+          "image-name" : "00-Rear-Cloud.svg",
+          "name" : "00-Rear-Cloud"
+        }
+      ],
+      "name" : "Background — small lower-left cloud",
+      "opacity-specializations" : [
+        {
+          "value" : 0.85
+        },
+        {
+          "appearance" : "dark",
+          "value" : 1
+        },
+        {
+          "appearance" : "tinted",
+          "value" : 1
+        }
+      ],
+      "position-specializations" : [
+        {
+          "idiom" : "watchOS",
+          "value" : {
+            "scale" : 1,
+            "translation-in-points" : [
+              24,
+              -24
+            ]
+          }
+        }
+      ],
+      "refractivity" : {
+        "depth" : 0,
+        "enabled" : false,
+        "strength" : 0
+      },
+      "shadow-specializations" : [
+        {
+          "value" : {
+            "kind" : "layer-color",
+            "opacity" : 0.12
+          }
+        },
+        {
+          "appearance" : "dark",
+          "value" : {
+            "kind" : "neutral",
+            "opacity" : 0.12
+          }
+        },
+        {
+          "appearance" : "tinted",
+          "value" : {
+            "kind" : "neutral",
+            "opacity" : 0.12
+          }
+        }
+      ],
+      "specular" : "inside",
+      "translucency" : {
+        "enabled" : true,
+        "value" : 0.02
+      }
+    }
+  ],
+  "supported-platforms" : {
+    "circles" : [
+      "watchOS"
+    ],
+    "squares" : "shared"
+  }
+}
