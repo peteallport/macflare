@@ -160,7 +160,12 @@ protection and required CI are additional layers, not substitutes.
   use full commit pins, downloads use SHA-256 checks, and PR jobs receive no repository
   secrets. Gitleaks is pinned to 8.30.1. Update `script/quality-tools.json` deliberately,
   review upstream release notes, and rerun checks when updating any tool.
-- **Security analysis:** CodeQL uses a separate clean, single-architecture Swift build
+- **Security analysis:** CodeQL runs on macOS 26 with Xcode 26.6 (17F113),
+  separately from the Xcode 27 build/test/Periphery job. GitHub documents an
+  [Xcode 27 / Swift 6.4 tracing incompatibility](https://github.com/github/codeql/issues/22742).
+  This scans the source using the older supported toolchain; it does not establish
+  analysis of an Xcode 27 binary or future Swift 6.4-only source. Revisit the pin
+  when upstream adds support. CodeQL uses a clean, single-architecture Swift build
   with signing and compiler caches disabled. Compilation/extraction failures are
   failures, not clean security results. The security-extended suite reports findings;
   branch protection blocks high/critical security findings and error-level results.
