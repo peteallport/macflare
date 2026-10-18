@@ -1,51 +1,206 @@
 #!/usr/bin/env bash
+# Validate the active Git index without changing staged content or local signing edits.
 set -euo pipefail
-
-echo "🔍 Checking for sensitive files and information..."
-
-# Block mobile provisioning profiles or certs from being committed
-if git diff --cached --name-only | grep -E -q '\\.(p12|mobileprovision)$'; then
-  echo "🚫 You're trying to commit a signing file (.p12/.mobileprovision). Blocked."
-  exit 1
-fi
-
-# Normalize code-signing values and bundle identifiers in the Xcode project
-# before commit to avoid leaking local provisioning details into the repo.
+export GIT_OPTIONAL_LOCKS=0
 
 repo_root="$(git rev-parse --show-toplevel)"
 cd "$repo_root"
+check_dir="$(mktemp -d "${TMPDIR:-/tmp}/macflare-pre-commit.XXXXXX")"
+trap 'rm -rf -- "$check_dir"' EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
+# Keep transient tool files (including xcrun caches) inside the disposable snapshot.
+export TMPDIR="$check_dir/"
 
-pbxproj_path="macflare.xcodeproj/project.pbxproj"
+# NUL-delimited paths handle whitespace and newlines. Deleting a signing artifact
+# is allowed; renaming one into the commit is checked as an addition.
+if [[ "${1:-}" == --all ]]; then
+    git ls-files --cached -z > "$check_dir/paths"
+else
+    git diff --cached --name-only --no-renames --diff-filter=ACMT -z > "$check_dir/paths"
+fi
+while IFS= read -r -d '' path; do
+    case "$path" in
+        *.[pP]12|*.[pP][fF][xX]|*.[mM][oO][bB][iI][lL][eE][pP][rR][oO][vV][iI][sS][iI][oO][nN]|*.[pP][rR][oO][vV][iI][sS][iI][oO][nN][pP][rR][oO][fF][iI][lL][eE])
+            printf 'Commit blocked: staged signing artifact: %s\n' "$path" >&2
+            exit 1
+            ;;
+    esac
+done < "$check_dir/paths"
 
-# Only run if the project file is staged in this commit
-if ! git diff --cached --name-only | grep -qx "$pbxproj_path"; then
-  exit 0
+# Configuration changes can affect unchanged sources. Include deletions and
+# nested configurations, and validate every Swift file in the active index.
+git diff --cached --name-only --no-renames -z -- \
+    ':(glob)**/.swiftformat' ':(glob)**/.swiftlint.yml' > "$check_dir/config-paths"
+if [[ "${1:-}" == --all ]] || [ -s "$check_dir/config-paths" ]; then
+    git ls-files --cached -z -- '*.swift' > "$check_dir/swift-paths"
+else
+    git diff --cached --name-only --no-renames --diff-filter=ACMT -z -- '*.swift' > "$check_dir/swift-paths"
+fi
+for tool in python3 gitleaks; do
+    if ! command -v "$tool" >/dev/null 2>&1; then
+        printf 'Commit blocked: required tool %s is unavailable.\n' "$tool" >&2
+        exit 1
+    fi
+done
+git show :script/check-public-content.py > "$check_dir/check-public-content.py"
+python3 "$check_dir/check-public-content.py"
+
+project='macflare.xcodeproj/project.pbxproj'
+if [[ "${1:-}" == --all ]]; then
+    printf '%s\0' "$project" > "$check_dir/project-path"
+else
+    git diff --cached --name-only -z -- "$project" > "$check_dir/project-path"
+fi
+if [ ! -s "$check_dir/project-path" ] && [ ! -s "$check_dir/swift-paths" ] && [ ! -s "$check_dir/config-paths" ]; then
+    echo 'No staged project changes or Swift files; signing artifact checks passed.'
+    exit 0
 fi
 
-if [ ! -f "$pbxproj_path" ]; then
-  exit 0
+if [ -s "$check_dir/swift-paths" ] || [ -s "$check_dir/config-paths" ]; then
+    for tool in swiftformat swiftlint; do
+        if ! command -v "$tool" >/dev/null 2>&1; then
+            printf 'Commit blocked: required tool %s is unavailable.\n' "$tool" >&2
+            exit 1
+        fi
+    done
+
+    # Include staged configuration and directory layout, even for partial staging.
+    mkdir "$check_dir/tree"
+    git checkout-index --all --prefix="$check_dir/tree/"
+    for config in .swiftformat .swiftlint.yml; do
+        if [ -L "$check_dir/tree/$config" ] || [ ! -f "$check_dir/tree/$config" ]; then
+            printf 'Commit blocked: staged %s is missing or not a regular file.\n' "$config" >&2
+            exit 1
+        fi
+    done
+    # Reject links for every staged config, retaining nested discovery during lint.
+    git ls-files --cached -z -- ':(glob)**/.swiftformat' ':(glob)**/.swiftlint.yml' > "$check_dir/validation-config-paths"
+    while IFS= read -r -d '' config; do
+        if [ -L "$check_dir/tree/$config" ] || [ ! -f "$check_dir/tree/$config" ]; then
+            printf 'Commit blocked: staged %s is missing or not a regular file.\n' "$config" >&2
+            exit 1
+        fi
+        case "$config" in
+            *.swiftformat)
+                # Parse configs even when their directories contain no Swift files.
+                if ! swiftformat --config "$check_dir/tree/$config" --rules > "$check_dir/swiftformat-config" 2>&1; then
+                    cat "$check_dir/swiftformat-config" >&2
+                    printf 'Commit blocked: SwiftFormat failed to validate staged configuration: %s\n' "$config" >&2
+                    exit 1
+                fi
+                ;;
+            *.swiftlint.yml)
+                # Auto-discovery silently falls back to defaults on malformed YAML.
+                if ! swiftlint rules --config "$check_dir/tree/$config" > "$check_dir/swiftlint-config" 2>&1; then
+                    cat "$check_dir/swiftlint-config" >&2
+                    printf 'Commit blocked: SwiftLint failed to validate staged configuration: %s\n' "$config" >&2
+                    exit 1
+                fi
+                ;;
+        esac
+    done < "$check_dir/validation-config-paths"
 fi
-echo "🧹 Cleaning sensitive information from project.pbxproj..."
 
-TEMP_CLEANED="$(mktemp)"
+if [ -s "$check_dir/project-path" ]; then
 
-# Scrub sensitive or machine-specific code signing fields and normalize bundle identifiers from STAGED blob
-git show ":$pbxproj_path" | sed -E \
-  -e 's/(DEVELOPMENT_TEAM = )[^;]*;/\1"";/g' \
-  -e 's/(PROVISIONING_PROFILE_SPECIFIER = )[^;]*;/\1"";/g' \
-  -e 's/(PROVISIONING_PROFILE = )[^;]*;/\1"";/g' \
-  -e 's/(CODE_SIGN_IDENTITY = )[^;]*;/\1"";/g' \
-  -e 's/PRODUCT_BUNDLE_IDENTIFIER = [^;]*\\.macflareTests[^;]*;/PRODUCT_BUNDLE_IDENTIFIER = "com.example.macflareTests";/g' \
-  -e 's/PRODUCT_BUNDLE_IDENTIFIER = [^;]*\\.macflareUITests[^;]*;/PRODUCT_BUNDLE_IDENTIFIER = "com.example.macflareUITests";/g' \
-  -e '/PRODUCT_BUNDLE_IDENTIFIER = [^;]*macflare(Tests|UITests)/! s/(PRODUCT_BUNDLE_IDENTIFIER = )[^;]*;/\1"com.example.macflare";/g' \
-  > "$TEMP_CLEANED"
+# Read the mode and blob from the active index, including GIT_INDEX_FILE used by
+# git commit. Never read or rewrite the working project or run git add/update-index.
+entry="$(git ls-files --stage -- "$project")"
+case "$entry" in
+    100644\ *|100755\ *) ;;
+    *)
+        echo 'Commit blocked: staged project.pbxproj is missing or not a regular file.' >&2
+        exit 1
+        ;;
+esac
+for tool in plutil python3; do
+    if ! command -v "$tool" >/dev/null 2>&1; then
+        printf 'Commit blocked: required tool %s is unavailable.\n' "$tool" >&2
+        exit 1
+    fi
+done
+git show ":$project" > "$check_dir/project.pbxproj"
+if ! plutil -convert xml1 -o "$check_dir/project.plist" -- "$check_dir/project.pbxproj"; then
+    echo 'Commit blocked: staged project.pbxproj failed plist syntax validation.' >&2
+    exit 1
+fi
 
-# Replace the staged file with the cleaned version
-HASH=$(git hash-object -w "$TEMP_CLEANED")
-git update-index --cacheinfo 100644 "$HASH" "$pbxproj_path"
-rm -f "$TEMP_CLEANED"
-echo "✅ Project file cleaned successfully"
-
-exit 0
+# Parse the project, rather than matching text that can occur in comments or
+# quoted scripts. Conditional keys such as DEVELOPMENT_TEAM[sdk=macosx*] count.
+python3 - "$check_dir/project.plist" <<'PY'
+import plistlib
+import sys
 
 
+def block(message):
+    raise SystemExit('Commit blocked: ' + message)
+
+
+with open(sys.argv[1], 'rb') as source:
+    project = plistlib.load(source)
+objects = project.get('objects')
+if not isinstance(objects, dict) or project.get('rootObject') not in objects:
+    block('staged project.pbxproj is missing a valid rootObject.')
+
+signing_keys = {
+    'DEVELOPMENT_TEAM', 'PROVISIONING_PROFILE',
+    'PROVISIONING_PROFILE_SPECIFIER', 'CODE_SIGN_IDENTITY',
+}
+for identifier, item in objects.items():
+    if not isinstance(item, dict):
+        block('staged project.pbxproj contains an invalid project object.')
+    settings = item.get('buildSettings', {})
+    if not isinstance(settings, dict):
+        block('staged project.pbxproj contains invalid buildSettings.')
+    for key, value in settings.items():
+        if key.split('[', 1)[0] in signing_keys and value != '':
+            block(f'staged project contains nonempty {key}. '
+                  'Keep personal signing settings in local build overrides; '
+                  'stage the intended project settings explicitly.')
+
+# A previous text-rewriting hook could collapse test bundle IDs into the app ID.
+# Validate literal IDs across targets while preserving every staged byte.
+owners = {}
+for identifier, target in objects.items():
+    if target.get('isa') != 'PBXNativeTarget':
+        continue
+    configuration_list = objects.get(target.get('buildConfigurationList'), {})
+    for configuration_id in configuration_list.get('buildConfigurations', []):
+        configuration = objects.get(configuration_id, {})
+        for key, value in configuration.get('buildSettings', {}).items():
+            if key.split('[', 1)[0] != 'PRODUCT_BUNDLE_IDENTIFIER' or not value:
+                continue
+            if not isinstance(value, str):
+                block('staged project contains an invalid bundle identifier.')
+            if '$' in value:
+                continue  # Expanded build settings require Xcode to resolve.
+            if value in owners and owners[value] != identifier:
+                block('staged project shares a bundle identifier across targets. '
+                      'Keep app and test bundle identifiers distinct.')
+            owners[value] = identifier
+
+print('Staged project checks passed; index and working tree preserved.')
+PY
+fi
+
+if [ -s "$check_dir/swift-paths" ]; then
+    cd "$check_dir/tree"
+    while IFS= read -r -d '' file; do
+        if [ -L "./$file" ] || [ ! -f "./$file" ]; then
+            printf 'Commit blocked: staged Swift path is not a regular file: %s\n' "$file" >&2
+            exit 1
+        fi
+        printf 'Checking staged content: %s\n' "$file"
+        if ! swiftformat "./$file" --lint --cache ignore; then
+            echo 'Commit blocked: SwiftFormat failed. Fix formatting and stage only intended changes.' >&2
+            exit 1
+        fi
+        if ! swiftlint lint --quiet --no-cache "./$file"; then
+            echo 'Commit blocked: SwiftLint failed. Fix reported issues and stage only intended changes.' >&2
+            exit 1
+        fi
+    done < "$check_dir/swift-paths"
+fi
+
+echo 'Staged checks passed; index and working tree preserved.'

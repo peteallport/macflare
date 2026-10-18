@@ -89,8 +89,7 @@ build/
 .build/
 Packages/
 Package.pins
-Package.resolved
-*.xcodeproj/project.xcworkspace/xcshareddata/
+# Keep the application dependency lockfile in source control.
 *.xcodeproj/xcuserdata/
 
 # Xcode generated files
@@ -146,3 +145,7 @@ Thumbs.db
 
 # Xcode build server configuration (machine-specific)
 buildServer.json
+
+# Local Python validation caches
+__pycache__/
+*.pyc
