@@ -174,6 +174,24 @@ def project_cases():
     data = project_data()
     data['objects'][object_id(1)]['buildSettings'] = {'PRODUCT_BUNDLE_IDENTIFIER': 'org.contributor.base'}
     cases.append(('project-level personal bundle ID', openstep(data), 'non-public bundle identifier'))
+    for config_id in (22, 23, 24):
+        for conditional_only in (False, True):
+            data = project_data()
+            config = data['objects'][object_id(config_id)]
+            value = config['buildSettings'].pop('PRODUCT_BUNDLE_IDENTIFIER')
+            config['baseConfigurationReference'] = object_id(50)
+            data['objects'][object_id(50)] = {
+                'isa': 'PBXFileReference', 'path': 'Contributor.xcconfig',
+                'sourceTree': '<group>', 'lastKnownFileType': 'text.xcconfig',
+            }
+            if conditional_only:
+                config['buildSettings']['PRODUCT_BUNDLE_IDENTIFIER[sdk=macosx*]'] = value
+            with fixture() as test:
+                test.stage('Contributor.xcconfig', 'PRODUCT_BUNDLE_IDENTIFIER = org.contributor.private\n')
+                test.stage(PROJECT, openstep(data))
+                test.write(PROJECT, VALID_PROJECT)
+                test.check_hook('must define a public bundle identifier inline', failure=True)
+            print(f'PASS xcconfig fallback rejected for target {config_id}, conditional-only={conditional_only}')
     data = project_data()
     data.pop('rootObject')
     cases.append(('missing root object', openstep(data), 'missing a valid rootObject'))

@@ -177,7 +177,11 @@ for identifier, target in objects.items():
     configuration_list = objects.get(target.get('buildConfigurationList'), {})
     for configuration_id in configuration_list.get('buildConfigurations', []):
         configuration = objects.get(configuration_id, {})
-        for key, value in configuration.get('buildSettings', {}).items():
+        settings = configuration.get('buildSettings', {})
+        if 'PRODUCT_BUNDLE_IDENTIFIER' not in settings:
+            block('each target configuration must define a public bundle identifier inline. '
+                  'Do not inherit bundle identifiers from xcconfig files or project defaults.')
+        for key, value in settings.items():
             if key.split('[', 1)[0] != 'PRODUCT_BUNDLE_IDENTIFIER' or not value:
                 continue
             if not isinstance(value, str):
