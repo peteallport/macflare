@@ -25,7 +25,7 @@ The script builds Debug, launches the app, and checks that its process remains r
 - Swift Package Manager with a tracked [`Package.resolved`](macflare.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved); Inject 1.5.2 is the sole third-party dependency and its integration is Debug-only.
 - In-memory SwiftData unit tests, a welcome-screen UI test, and regression tests for staged signing, SwiftFormat, and SwiftLint validation.
 - A single [macOS CI job](.github/workflows/macos.yml) runs Debug tests and a Release build for pull requests and pushes to `main` and `development`.
-- App Sandbox and outgoing network access; hot reload permissions are limited to Debug. CloudKit, push notifications, and file access are not implemented capabilities.
+- App Sandbox with incoming/outgoing network access and user-selected read-only file access. Existing CloudKit and push notification entitlements are retained, but their application features are not implemented. Hot reload permissions are limited to Debug.
 
 ## Support macflare
 

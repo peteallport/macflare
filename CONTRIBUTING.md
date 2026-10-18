@@ -1,6 +1,6 @@
 # Contributing to macflare
 
-Macflare is a native macOS prototype. The welcome screen is implemented; the Cloudflare login button has no action yet. Keep documentation and capabilities aligned with working features.
+Macflare is a native macOS prototype. The welcome screen is implemented; the Cloudflare login button has no action yet. Keep documentation aligned with working features.
 
 ## Toolchain and platforms
 
@@ -23,7 +23,7 @@ DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild -version
 
 ## Setup and verification
 
-Install [SwiftFormat 0.61.1](https://github.com/nicklockwood/SwiftFormat/releases/tag/0.61.1) and [SwiftLint 0.63.2](https://github.com/realm/SwiftLint/releases/tag/0.63.2), placing their executables on `PATH`. CI downloads these exact versions and verifies their SHA-256 digests before running them. Update tool versions and checksums together after checking the formatting and lint rules.
+Install [SwiftFormat 0.64.0](https://github.com/nicklockwood/SwiftFormat/releases/tag/0.64.0) and [SwiftLint 0.65.1](https://github.com/realm/SwiftLint/releases/tag/0.65.1), placing their executables on `PATH`. CI downloads these exact versions and verifies their SHA-256 digests before running them. Update tool versions and checksums together after checking the formatting and lint rules.
 
 Clone the repository, then enable staged validation once per clone:
 
@@ -38,23 +38,27 @@ Open `macflare.xcodeproj`, choose the `macflare` scheme and **My Mac**, or build
 CONFIGURATION=Release ./script/build_and_run.sh --verify
 ```
 
-The script defaults to Debug. `--verify` checks that the launched process remains running; it does not execute tests or establish that login works.
+The script defaults to Debug and uses the ad-hoc entitlement copy described below. `--verify` checks that the launched process remains running; it does not execute tests or establish that login works.
 
-Use these commands to run the Debug unit/UI tests and build Release with ad-hoc signing. No Apple Developer account, provisioning profile, or signing certificate is needed:
+Use these commands to run the Debug unit/UI tests and build Release with ad-hoc signing. The generated entitlement copies omit only push/iCloud claims that require provisioning, while retaining sandbox, file, network, and configuration-specific hot reload permissions. No Apple Developer account, provisioning profile, or signing certificate is needed for these checks; they do not validate provisioned cloud/push behavior:
 
 ```bash
+python3 script/prepare_ad_hoc_entitlements.py Debug "$PWD/build/ad-hoc-Debug.entitlements"
 xcodebuild test \
   -project macflare.xcodeproj -scheme macflare \
   -configuration Debug -destination 'platform=macOS' \
   -parallel-testing-enabled NO \
   -disableAutomaticPackageResolution -onlyUsePackageVersionsFromResolvedFile \
+  MACFLARE_CODE_SIGN_ENTITLEMENTS="$PWD/build/ad-hoc-Debug.entitlements" \
   CODE_SIGN_IDENTITY=- CODE_SIGNING_REQUIRED=YES CODE_SIGNING_ALLOWED=YES DEVELOPMENT_TEAM=
 
+python3 script/prepare_ad_hoc_entitlements.py Release "$PWD/build/ad-hoc-Release.entitlements"
 xcodebuild build \
   -project macflare.xcodeproj -scheme macflare \
   -configuration Release -destination 'generic/platform=macOS' \
   -disableAutomaticPackageResolution -onlyUsePackageVersionsFromResolvedFile \
   ARCHS='arm64 x86_64' ONLY_ACTIVE_ARCH=NO \
+  MACFLARE_CODE_SIGN_ENTITLEMENTS="$PWD/build/ad-hoc-Release.entitlements" \
   CODE_SIGN_IDENTITY=- CODE_SIGNING_REQUIRED=YES CODE_SIGNING_ALLOWED=YES DEVELOPMENT_TEAM=
 
 swiftformat macflare macflareTests macflareUITests --lint --cache ignore
@@ -77,7 +81,7 @@ Hot reload is optional. Install [InjectionIII](https://github.com/johnno1962/Inj
 
 ## Signing and capabilities
 
-The checked-in project has generic bundle identifiers and empty developer team/signing identity settings. The commands above supply ad-hoc signing locally. Use an appropriate Apple signing identity and team only when preparing distribution; this repository does not include a distribution or notarization workflow.
+The checked-in project has generic bundle identifiers and empty developer team/signing identity settings. Normal Xcode builds retain the original entitlements and require an appropriate Apple development identity, team, and provisioning configuration for cloud/push capabilities. The commands above and CI explicitly override the app-only `MACFLARE_CODE_SIGN_ENTITLEMENTS` setting with a generated ad-hoc copy; test targets keep their own signing settings. The generator never changes the checked-in entitlement files. This repository does not include a distribution or notarization workflow.
 
 Keep personal Xcode signing changes out of commits. Prefer command-line build setting overrides for local signing. If Xcode edits `project.pbxproj`, use selective staging to commit the intended shared changes while leaving the existing personal signing edits in the working tree. Avoid restoring the whole project file or staging it wholesale to address a hook failure.
 
@@ -85,7 +89,7 @@ The [pre-commit hook](.githooks/pre-commit) requires macOS `plutil`, Python 3, a
 
 SwiftFormat checks whitespace without rewriting files; SwiftLint checks a focused set of code issues. Formatting differences and lint errors block the commit; lint warnings remain visible without blocking. The hook never rewrites the working tree, updates the index, or changes bundle identifiers. A rejection leaves both staged and unstaged changes intact so you can correct the staged configuration deliberately. Run `python3 -B -u script/test-pre-commit.py` after changing the hook.
 
-The app uses App Sandbox and outgoing network access, including Debug's connection to InjectionIII. Debug alone disables library validation for injected code; Release retains library validation. Neither configuration permits incoming server connections. There is no current CloudKit/iCloud sync, push registration, or file import/export feature; add a capability only with its implementation and verification.
+Both configurations retain the original App Sandbox, incoming/outgoing networking, user-selected read-only file access, CloudKit/iCloud, and development push notification entitlements. The iCloud container identifier list is empty, and SwiftData retains its default CloudKit selection. These declarations do not establish working sync, push registration, or file import/export features. Debug alone disables library validation for injected code; Release retains library validation. Preserve the existing capability settings unless the maintainer requests a change.
 
 ## Project structure and conventions
 

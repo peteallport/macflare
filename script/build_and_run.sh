@@ -20,6 +20,8 @@ esac
 derived_data="$repo_root/build/DerivedData"
 app_bundle="$derived_data/Build/Products/$configuration/macflare.app"
 app_binary="$app_bundle/Contents/MacOS/macflare"
+ad_hoc_entitlements="$repo_root/build/ad-hoc-$configuration.entitlements"
+python3 "$repo_root/script/prepare_ad_hoc_entitlements.py" "$configuration" "$ad_hoc_entitlements"
 
 # Stop only the app built by this worktree, leaving other checkouts alone.
 app_pids() {
@@ -38,7 +40,8 @@ xcodebuild -project "$repo_root/macflare.xcodeproj" -scheme macflare \
   -configuration "$configuration" -destination "platform=macOS,arch=$(uname -m)" \
   -derivedDataPath "$derived_data" -clonedSourcePackagesDirPath "$repo_root/build/SourcePackages" \
   -disableAutomaticPackageResolution -onlyUsePackageVersionsFromResolvedFile \
-  CODE_SIGN_IDENTITY=- CODE_SIGNING_ALLOWED=YES CODE_SIGNING_REQUIRED=YES DEVELOPMENT_TEAM= build
+  CODE_SIGN_IDENTITY=- CODE_SIGNING_ALLOWED=YES CODE_SIGNING_REQUIRED=YES DEVELOPMENT_TEAM= \
+  MACFLARE_CODE_SIGN_ENTITLEMENTS="$ad_hoc_entitlements" build
 
 case "$mode" in
   --debug)

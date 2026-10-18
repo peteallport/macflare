@@ -5,7 +5,7 @@ Macflare is a native macOS prototype for Cloudflare power users. The welcome scr
 ## Development baseline
 
 - Read `CONTRIBUTING.md` for toolchain, build/test commands, signing, and dependency updates.
-- Target macOS 14.0+ only. iOS and iPadOS are possible future work, not current supported destinations. Do not add platform settings or entitlements for unimplemented features.
+- Target macOS 14.0+ only. iOS and iPadOS are possible future work, not current supported destinations. Preserve existing capability declarations unless the maintainer requests changes, and distinguish declared permissions from implemented features.
 - Use Swift 6 with complete strict concurrency checking for the app and tests. Keep UI state on `@MainActor`, use actors for shared mutable state, and pass `Sendable` values across isolation boundaries. Do not bypass diagnostics without a documented safety invariant.
 - Use Swift Package Manager and commit intentional changes to `Package.resolved`. Inject is the sole third-party dependency and its integration is Debug-only.
 - Use Swift Testing for unit tests and XCTest for UI tests. SwiftData tests use in-memory stores. Verify Debug tests, a Release build, and the hook regression checks for baseline changes.
