@@ -1,0 +1,7 @@
+# Created by Peter C. Allport
+project: macflare.xcodeproj
+schemes:
+  - macflare
+strict: true
+retain_swift_ui_previews: true
+relative_results: true

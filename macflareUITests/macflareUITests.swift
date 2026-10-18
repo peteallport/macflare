@@ -7,39 +7,31 @@
 
 import XCTest
 
-final class macflareUITests: XCTestCase {
-
+final class MacflareUITests: XCTestCase {
     override func setUpWithError() throws {
-        // Put setup code here. This method is called before the invocation of each test method in the class.
-
-        // In UI tests it is usually best to stop immediately when a failure occurs.
         continueAfterFailure = false
-
-        // In UI tests it’s important to set the initial state - such as interface orientation - required for your tests before they run. The setUp method is a good place to do this.
-    }
-
-    override func tearDownWithError() throws {
-        // Put teardown code here. This method is called after the invocation of each test method in the class.
     }
 
     @MainActor
-    func testExample() throws {
-        // UI tests must launch the application that they test.
+    func testWelcomeScreenAndLoginPlaceholder() {
         let app = XCUIApplication()
         app.launch()
+        defer { app.terminate() }
 
-        let addButton = app.buttons["addItemButton"]
-        XCTAssertTrue(addButton.waitForExistence(timeout: 2))
-        addButton.tap()
+        let title = app.staticTexts["welcomeTitle"]
+        let subtitle = app.staticTexts["welcomeSubtitle"]
+        let loginButton = app.buttons["cloudflareLoginButton"]
+        XCTAssertTrue(title.waitForExistence(timeout: 5))
+        XCTAssertEqual(title.value as? String, "Macflare")
+        XCTAssertEqual(subtitle.value as? String, "Cloudflare for power users on macOS.")
+        XCTAssertTrue(loginButton.isHittable)
+        XCTAssertEqual(loginButton.label, "Login with Cloudflare")
 
-        // Basic smoke check passed if no crash occurs on tap
-    }
+        loginButton.click()
 
-    @MainActor
-    func testLaunchPerformance() throws {
-        // This measures how long it takes to launch your application.
-        measure(metrics: [XCTApplicationLaunchMetric()]) {
-            XCUIApplication().launch()
-        }
+        // Authentication is a placeholder; clicking it must leave the welcome screen usable.
+        XCTAssertTrue(title.exists)
+        XCTAssertTrue(loginButton.isHittable)
+        XCTAssertEqual(app.state, .runningForeground)
     }
 }
