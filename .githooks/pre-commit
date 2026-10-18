@@ -147,6 +147,9 @@ signing_keys = {
     'DEVELOPMENT_TEAM', 'PROVISIONING_PROFILE',
     'PROVISIONING_PROFILE_SPECIFIER', 'CODE_SIGN_IDENTITY',
 }
+public_bundle_ids = {
+    'com.example.macflare', 'com.example.macflareTests', 'com.example.macflareUITests',
+}
 for identifier, item in objects.items():
     if not isinstance(item, dict):
         block('staged project.pbxproj contains an invalid project object.')
@@ -154,6 +157,12 @@ for identifier, item in objects.items():
     if not isinstance(settings, dict):
         block('staged project.pbxproj contains invalid buildSettings.')
     for key, value in settings.items():
+        if key.split('[', 1)[0] == 'PRODUCT_BUNDLE_IDENTIFIER' and (
+            not isinstance(value, str) or value not in public_bundle_ids
+        ):
+            block('staged project contains a non-public bundle identifier. '
+                  'Stage only the repository com.example bundle identifiers; '
+                  'keep personal bundle identifiers in your working tree or local build overrides.')
         if key.split('[', 1)[0] in signing_keys and value != '':
             block(f'staged project contains nonempty {key}. '
                   'Keep personal signing settings in local build overrides; '

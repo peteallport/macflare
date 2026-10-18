@@ -164,6 +164,16 @@ def project_cases():
     data = project_data()
     data['objects'][object_id(24)]['buildSettings']['PRODUCT_BUNDLE_IDENTIFIER[sdk=macosx*]'] = 'com.example.macflare'
     cases.append(('conditional ID collision', openstep(data), 'shares a bundle identifier'))
+    for value in ('org.contributor.macflare', 'com.example.personal',
+                  '$(LOCAL_BUNDLE_ID)', '', ['com.example.macflare']):
+        for suffix in ('', '[sdk=macosx*]', '[sdk=macosx*][arch=arm64]'):
+            data = project_data()
+            data['objects'][object_id(22)]['buildSettings']['PRODUCT_BUNDLE_IDENTIFIER' + suffix] = value
+            cases.append(('non-public bundle ID ' + repr(value) + suffix,
+                          openstep(data), 'non-public bundle identifier'))
+    data = project_data()
+    data['objects'][object_id(1)]['buildSettings'] = {'PRODUCT_BUNDLE_IDENTIFIER': 'org.contributor.base'}
+    cases.append(('project-level personal bundle ID', openstep(data), 'non-public bundle identifier'))
     data = project_data()
     data.pop('rootObject')
     cases.append(('missing root object', openstep(data), 'missing a valid rootObject'))
@@ -521,7 +531,8 @@ def actual_commits(linked=False):
         staged = VALID_PROJECT + '// staged project edit\n'
         test.stage(PROJECT, staged)
         test.write(PROJECT, staged.replace('"DEVELOPMENT_TEAM" = ""',
-                                          '"DEVELOPMENT_TEAM" = "PERSONAL"'))
+                                          '"DEVELOPMENT_TEAM" = "PERSONAL"').replace(
+                                              'com.example.macflare', 'org.contributor.macflare'))
         test.write('README.md', 'unstaged unrelated changes')
         test.write('untracked.p12', 'local only')
         before = working_files(test.root)
