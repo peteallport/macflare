@@ -6,6 +6,7 @@ Created by Peter C. Allport
 import importlib.util
 from pathlib import Path
 import shutil
+import subprocess
 
 spec = importlib.util.spec_from_file_location('hook_tests', Path(__file__).with_name('test-pre-commit.py'))
 hooks = importlib.util.module_from_spec(spec)
@@ -47,4 +48,14 @@ with hooks.fixture() as test:
     test.stage('README.md', 'safe\n')
     test.check_hook('could not complete', failure=True)
     print('PASS scanner failure blocks commit')
+with hooks.fixture() as test:
+    test.stage('notes.txt', secret)
+    test.git('-c', 'core.hooksPath=/dev/null', 'commit', '-qm', 'Synthetic historical fixture')
+    test.git('rm', 'notes.txt')
+    test.git('-c', 'core.hooksPath=/dev/null', 'commit', '-qm', 'Remove synthetic fixture')
+    result = subprocess.run(['bash', str(hooks.REPOSITORY / '.githooks/pre-push')],
+                            cwd=test.root, env=test.env, capture_output=True)
+    assert result.returncode != 0 and b'github-pat' in result.stdout
+    assert secret.encode() not in result.stdout + result.stderr
+    print('PASS pre-push blocks removed historical credentials without printing them')
 print('Public-content regression checks passed.')

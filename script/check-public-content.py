@@ -59,14 +59,19 @@ def main():
         command = ['gitleaks', 'git', '--no-banner', '--redact=100',
                    '--ignore-gitleaks-allow', '--gitleaks-ignore-path', os.devnull,
                    '--config', str(config), '--report-format=json', '--report-path', str(report)]
-        command += ['--log-opts=--all'] if args.history else ['--staged']
-        result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        if result.returncode not in (0, 1) or not report.exists():
-            sys.exit('Public-content check failed: Gitleaks could not complete; no scanner output published.')
-        for finding in json.loads(report.read_text()):
-            findings.append((finding['File'], finding['RuleID']))
-        if result.returncode and not findings:
-            sys.exit('Public-content check failed: Gitleaks did not complete successfully.')
+        scans = [['--staged']]
+        if args.history:
+            scans.append(['--log-opts=--all'])
+        for scope in scans:
+            report.unlink(missing_ok=True)
+            result = subprocess.run(command + scope, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            if result.returncode not in (0, 1) or not report.exists():
+                sys.exit('Public-content check failed: Gitleaks could not complete; no scanner output published.')
+            detected = json.loads(report.read_text())
+            for finding in detected:
+                findings.append((finding['File'], finding['RuleID']))
+            if result.returncode and not detected:
+                sys.exit('Public-content check failed: Gitleaks did not complete successfully.')
     for name, rule in sorted(set(findings)):
         # JSON escapes newlines/control characters in filenames. Never print matches.
         print(f'Public-content check blocked: {json.dumps(name)} ({rule})')
