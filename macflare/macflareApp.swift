@@ -5,14 +5,14 @@
 //  Created by Peter C. Allport on 6/24/25.
 //
 
+import AppKit
 import SwiftData
 import SwiftUI
-import AppKit
-@_exported import Inject
 
 @main
+@MainActor
 struct MacflareApp: App {
-    var sharedModelContainer: ModelContainer = {
+    private let sharedModelContainer: ModelContainer = {
         let schema = Schema([
             Item.self,
         ])
@@ -42,7 +42,7 @@ struct MacflareApp: App {
             CommandGroup(replacing: .windowSize) {}
         }
     }
-    
+
     private func configureWindow() {
         DispatchQueue.main.async {
             if let window = NSApplication.shared.windows.first {
@@ -53,4 +53,3 @@ struct MacflareApp: App {
         }
     }
 }
-

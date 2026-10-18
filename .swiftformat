@@ -1,0 +1,7 @@
+# Created by Peter C. Allport
+# Keep the initial baseline focused on whitespace, without rewriting Swift idioms.
+--swift-version 6.0
+--language-mode 6
+--exclude .build,DerivedData
+--rules consecutiveBlankLines,consecutiveSpaces,linebreakAtEndOfFile,linebreaks,spaceAroundOperators,spaceInsideBraces,spaceInsideBrackets,spaceInsideParens,trailingSpace
+--trimwhitespace always

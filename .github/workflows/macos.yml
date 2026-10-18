@@ -1,0 +1,149 @@
+name: macOS
+
+on:
+  pull_request:
+  push:
+    branches: [main, development]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: macos-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    name: Debug tests and Release build
+    runs-on: xcode-27
+    timeout-minutes: 20
+    env:
+      # Keep the compiler explicit when the hosted image's default changes.
+      DEVELOPER_DIR: /Applications/Xcode_27.app/Contents/Developer
+      RESOLVED_FILE: macflare.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Verify toolchain and tracked dependency resolution
+        run: |
+          set -euo pipefail
+          test -d "$DEVELOPER_DIR"
+          xcode_version="$(xcodebuild -version)"
+          printf '%s\n' "$xcode_version"
+          if [[ "$xcode_version" != $'Xcode 27.0\nBuild version 27A266a' ]]; then
+            echo '::error::CI requires release Xcode 27.0 (27A266a). Update the toolchain pin deliberately.'
+            exit 1
+          fi
+          xcrun swift --version
+          test -f "$RESOLVED_FILE"
+          git ls-files --error-unmatch "$RESOLVED_FILE"
+          mkdir -p "$RUNNER_TEMP/macflare-results"
+
+      - name: Install pinned Swift validation tools
+        env:
+          SWIFTFORMAT_VERSION: '0.64.0'
+          SWIFTFORMAT_SHA256: 95ea62625d0b898a7af870293311ae6f09e4a3147ecd900593687e4b9ab2fd98
+          SWIFTLINT_VERSION: '0.65.1'
+          SWIFTLINT_SHA256: c1e429b0599cf1b516f369a2d9ec04eaf0e436f3c12b637df8851fa52ff694d0
+        run: |
+          set -euo pipefail
+          tool_dir="$RUNNER_TEMP/macflare-validation-tools"
+          mkdir -p "$tool_dir/swiftformat" "$tool_dir/swiftlint"
+          curl -fsSL --retry 3 \
+            "https://github.com/nicklockwood/SwiftFormat/releases/download/${SWIFTFORMAT_VERSION}/swiftformat.zip" \
+            -o "$tool_dir/swiftformat.zip"
+          curl -fsSL --retry 3 \
+            "https://github.com/realm/SwiftLint/releases/download/${SWIFTLINT_VERSION}/portable_swiftlint.zip" \
+            -o "$tool_dir/swiftlint.zip"
+          echo "$SWIFTFORMAT_SHA256  $tool_dir/swiftformat.zip" | shasum -a 256 --check
+          echo "$SWIFTLINT_SHA256  $tool_dir/swiftlint.zip" | shasum -a 256 --check
+          unzip -q "$tool_dir/swiftformat.zip" -d "$tool_dir/swiftformat"
+          unzip -q "$tool_dir/swiftlint.zip" -d "$tool_dir/swiftlint"
+          test "$("$tool_dir/swiftformat/swiftformat" --version)" = "$SWIFTFORMAT_VERSION"
+          test "$("$tool_dir/swiftlint/swiftlint" version)" = "$SWIFTLINT_VERSION"
+          echo "$tool_dir/swiftformat" >> "$GITHUB_PATH"
+          echo "$tool_dir/swiftlint" >> "$GITHUB_PATH"
+
+      - name: Test staged validation
+        run: python3 -B -u script/test-pre-commit.py
+
+      - name: Check Swift formatting and lint
+        run: |
+          set -euo pipefail
+          test -f .swiftformat
+          test ! -L .swiftformat
+          test -f .swiftlint.yml
+          test ! -L .swiftlint.yml
+          git ls-files -z -- ':(glob)**/.swiftformat' ':(glob)**/.swiftlint.yml' > "$RUNNER_TEMP/macflare-validation-configs"
+          while IFS= read -r -d '' config; do
+            if [[ -L "$config" || ! -f "$config" ]]; then
+              printf 'Swift configuration must be a regular file: %s\n' "$config" >&2
+              exit 1
+            fi
+            case "$config" in
+              *.swiftformat) swiftformat --config "./$config" --rules > /dev/null ;;
+              *.swiftlint.yml) swiftlint rules --config "./$config" > /dev/null ;;
+            esac
+          done < "$RUNNER_TEMP/macflare-validation-configs"
+          swiftformat macflare macflareTests macflareUITests --lint --cache ignore
+          swiftlint lint --quiet --no-cache
+
+      - name: Build and test Debug
+        run: |
+          set -euo pipefail
+          # Full capabilities remain the project default. Ad-hoc checks cannot
+          # exercise provisioned iCloud or push services.
+          python3 script/prepare_ad_hoc_entitlements.py Debug "$RUNNER_TEMP/macflare-Debug.entitlements"
+          xcodebuild test \
+            -project macflare.xcodeproj \
+            -scheme macflare \
+            -configuration Debug \
+            -destination 'platform=macOS' \
+            -parallel-testing-enabled NO \
+            -derivedDataPath "$RUNNER_TEMP/macflare-derived-data" \
+            -resultBundlePath "$RUNNER_TEMP/macflare-results/Debug.xcresult" \
+            -disableAutomaticPackageResolution \
+            -onlyUsePackageVersionsFromResolvedFile \
+            MACFLARE_CODE_SIGN_ENTITLEMENTS="$RUNNER_TEMP/macflare-Debug.entitlements" \
+            CODE_SIGN_IDENTITY=- CODE_SIGNING_REQUIRED=YES CODE_SIGNING_ALLOWED=YES DEVELOPMENT_TEAM= \
+            2>&1 | tee "$RUNNER_TEMP/macflare-results/Debug.log"
+
+      - name: Build Release
+        run: |
+          set -euo pipefail
+          python3 script/prepare_ad_hoc_entitlements.py Release "$RUNNER_TEMP/macflare-Release.entitlements"
+          xcodebuild build \
+            -project macflare.xcodeproj \
+            -scheme macflare \
+            -configuration Release \
+            -destination 'generic/platform=macOS' \
+            -derivedDataPath "$RUNNER_TEMP/macflare-derived-data" \
+            -resultBundlePath "$RUNNER_TEMP/macflare-results/Release.xcresult" \
+            -disableAutomaticPackageResolution \
+            -onlyUsePackageVersionsFromResolvedFile \
+            ARCHS='arm64 x86_64' ONLY_ACTIVE_ARCH=NO \
+            MACFLARE_CODE_SIGN_ENTITLEMENTS="$RUNNER_TEMP/macflare-Release.entitlements" \
+            CODE_SIGN_IDENTITY=- CODE_SIGNING_REQUIRED=YES CODE_SIGNING_ALLOWED=YES DEVELOPMENT_TEAM= \
+            2>&1 | tee "$RUNNER_TEMP/macflare-results/Release.log"
+
+      - name: Verify dependency resolution did not change
+        if: always()
+        run: |
+          set -euo pipefail
+          test -f "$RESOLVED_FILE"
+          git diff --exit-code -- "$RESOLVED_FILE"
+
+      - name: Upload failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: macos-failure-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/macflare-results/
+          if-no-files-found: ignore
+          retention-days: 7
