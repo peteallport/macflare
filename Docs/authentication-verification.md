@@ -33,7 +33,9 @@ Cloudflare returns invalid bearer credentials as HTTP 403 with error 9109 and me
 
 ## Production and remaining limits
 
-A separate **MacFlare Production** registration is prepared with private visibility, the same callback, PKCE grants, and minimal scopes. It has not been created. Public publication also requires publisher-domain verification and app metadata. No production client ID or production authentication is claimed.
+On October 17, 2026, the separate **MacFlare Production** registration was created with private visibility, the same loopback callback, Code response, Authorization Code + Refresh Token grants, None (PKCE), and `account-settings.read offline_access`. Its public client ID is recorded in `Config/OAuthProduction.xcconfig`; no client secret is used. Production live authentication has not been tested. Public publication still requires publisher-domain verification and app metadata.
+
+Release compilation with `-xcconfig Config/OAuthProduction.xcconfig` and signing disabled passed. The built Info.plist contains the production client ID, distinct from development. This confirms build configuration only.
 
 An optional command-line Swift 6 override failed in the existing Inject dependency's shared mutable state. This probe forces the dependency's language mode too and does not establish that the new auth source fails Swift 6. Dependency modernization remains outside this authentication change. The project's current-settings Debug/Release builds passed.
 

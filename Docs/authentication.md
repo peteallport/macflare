@@ -27,9 +27,18 @@ Use a local signing configuration suitable for the existing project entitlements
 
 ## Production registration
 
-Use a separate **MacFlare Production** client with the same PKCE settings, redirect and minimal scopes. Supply its public ID explicitly for Release builds; the development configuration is only selected by the Debug run script. Each client ID has a separate Keychain entry, so development refresh and sign-out cannot affect a production session. Legacy unscoped credentials are left untouched because their owning client is unknown.
+The separate **MacFlare Production** client was created on October 17, 2026 with private visibility, Code response, Authorization Code + Refresh Token grants, None (PKCE) authentication, `account-settings.read offline_access`, and the same `http://127.0.0.1:8976/oauth/callback` redirect. Its non-secret public ID is in `Config/OAuthProduction.xcconfig`.
 
-Production registration starts private. Public availability additionally requires a client URL, logo, app name, and DNS TXT publisher verification. Verify the intended publisher domain before submission: Cloudflare says the verified domain cannot be changed, and public visibility cannot revert to private. Those production registration and publication steps remain separate from the approved development client.
+Select the production configuration explicitly for Release builds:
+
+```sh
+xcodebuild -project macflare.xcodeproj -scheme macflare -configuration Release \
+  -xcconfig Config/OAuthProduction.xcconfig build
+```
+
+The Debug run script continues to select the development configuration. Each client ID has a separate Keychain entry, so development refresh and sign-out cannot affect a production session. Legacy unscoped credentials are left untouched because their owning client is unknown.
+
+Production registration remains private. Public availability additionally requires a client URL, logo, app name, and DNS TXT publisher verification. Verify the intended publisher domain before submission: Cloudflare says the verified domain cannot be changed, and public visibility cannot revert to private. Registration and build configuration do not establish live production authentication; that flow has not been tested.
 
 ## Verification
 
