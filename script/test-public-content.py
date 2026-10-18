@@ -58,4 +58,13 @@ with hooks.fixture() as test:
     assert result.returncode != 0 and b'github-pat' in result.stdout
     assert secret.encode() not in result.stdout + result.stderr
     print('PASS pre-push blocks removed historical credentials without printing them')
+with hooks.fixture() as test:
+    test.stage(hooks.PROJECT, hooks.VALID_PROJECT.replace('"DEVELOPMENT_TEAM" = ""',
+                                                       '"DEVELOPMENT_TEAM" = "PRIVATE"'))
+    test.git('-c', 'core.hooksPath=/dev/null', 'commit', '-qm', 'Synthetic signing fixture')
+    test.check_hook('nonempty DEVELOPMENT_TEAM', failure=True, arguments=('--all',))
+    print('PASS full-snapshot CI rejects already-committed private signing settings')
+with hooks.fixture() as test:
+    test.check_hook('Staged checks passed', arguments=('--all',))
+    print('PASS full-snapshot CI validates a clean index without staged changes')
 print('Public-content regression checks passed.')

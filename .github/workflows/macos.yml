@@ -81,26 +81,8 @@ jobs:
       - name: Test staged validation
         run: python3 -B -u script/test-pre-commit.py
 
-      - name: Check Swift formatting and lint
-        run: |
-          set -euo pipefail
-          test -f .swiftformat
-          test ! -L .swiftformat
-          test -f .swiftlint.yml
-          test ! -L .swiftlint.yml
-          git ls-files -z -- ':(glob)**/.swiftformat' ':(glob)**/.swiftlint.yml' > "$RUNNER_TEMP/macflare-validation-configs"
-          while IFS= read -r -d '' config; do
-            if [[ -L "$config" || ! -f "$config" ]]; then
-              printf 'Swift configuration must be a regular file: %s\n' "$config" >&2
-              exit 1
-            fi
-            case "$config" in
-              *.swiftformat) swiftformat --config "./$config" --rules > /dev/null ;;
-              *.swiftlint.yml) swiftlint rules --config "./$config" > /dev/null ;;
-            esac
-          done < "$RUNNER_TEMP/macflare-validation-configs"
-          swiftformat macflare macflareTests macflareUITests --lint --cache ignore
-          swiftlint lint --quiet --no-cache
+      - name: Validate full committed snapshot
+        run: .githooks/pre-commit --all
 
       - name: Build and test Debug
         run: |

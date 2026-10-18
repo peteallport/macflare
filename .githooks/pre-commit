@@ -14,7 +14,11 @@ export TMPDIR="$check_dir/"
 
 # NUL-delimited paths handle whitespace and newlines. Deleting a signing artifact
 # is allowed; renaming one into the commit is checked as an addition.
-git diff --cached --name-only --no-renames --diff-filter=ACMT -z > "$check_dir/paths"
+if [[ "${1:-}" == --all ]]; then
+    git ls-files --cached -z > "$check_dir/paths"
+else
+    git diff --cached --name-only --no-renames --diff-filter=ACMT -z > "$check_dir/paths"
+fi
 while IFS= read -r -d '' path; do
     case "$path" in
         *.[pP]12|*.[pP][fF][xX]|*.[mM][oO][bB][iI][lL][eE][pP][rR][oO][vV][iI][sS][iI][oO][nN]|*.[pP][rR][oO][vV][iI][sS][iI][oO][nN][pP][rR][oO][fF][iI][lL][eE])
@@ -28,7 +32,7 @@ done < "$check_dir/paths"
 # nested configurations, and validate every Swift file in the active index.
 git diff --cached --name-only --no-renames -z -- \
     ':(glob)**/.swiftformat' ':(glob)**/.swiftlint.yml' > "$check_dir/config-paths"
-if [ -s "$check_dir/config-paths" ]; then
+if [[ "${1:-}" == --all ]] || [ -s "$check_dir/config-paths" ]; then
     git ls-files --cached -z -- '*.swift' > "$check_dir/swift-paths"
 else
     git diff --cached --name-only --no-renames --diff-filter=ACMT -z -- '*.swift' > "$check_dir/swift-paths"
@@ -43,7 +47,11 @@ git show :script/check-public-content.py > "$check_dir/check-public-content.py"
 python3 "$check_dir/check-public-content.py"
 
 project='macflare.xcodeproj/project.pbxproj'
-git diff --cached --name-only -z -- "$project" > "$check_dir/project-path"
+if [[ "${1:-}" == --all ]]; then
+    printf '%s\0' "$project" > "$check_dir/project-path"
+else
+    git diff --cached --name-only -z -- "$project" > "$check_dir/project-path"
+fi
 if [ ! -s "$check_dir/project-path" ] && [ ! -s "$check_dir/swift-paths" ] && [ ! -s "$check_dir/config-paths" ]; then
     echo 'No staged project changes or Swift files; signing artifact checks passed.'
     exit 0

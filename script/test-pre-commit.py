@@ -112,12 +112,12 @@ class Fixture:
         self.write(name, content)
         self.git('add', '--', name)
 
-    def check_hook(self, message, failure=False):
+    def check_hook(self, message, failure=False, arguments=()):
         index = self.root / self.git('rev-parse', '--git-path', 'index').stdout.decode().strip()
         before_index = index.read_bytes()
         before_work = working_files(self.root)
         before_head = self.git('rev-parse', 'HEAD').stdout
-        result = subprocess.run([str(HOOK)], cwd=self.root, env=self.env,
+        result = subprocess.run([str(HOOK), *arguments], cwd=self.root, env=self.env,
                                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         assert (result.returncode != 0) == failure, result.stdout.decode()
         assert message.encode() in result.stdout, result.stdout.decode()

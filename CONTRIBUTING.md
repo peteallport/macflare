@@ -174,6 +174,7 @@ Run the checks locally:
 ```bash
 python3 script/check-public-content.py --history
 python3 -B -u script/test-public-content.py
+.githooks/pre-commit --all
 python3 -B -u script/test-pre-commit.py
 periphery scan --config .periphery.yml --clean-build -- CODE_SIGNING_ALLOWED=NO -disableAutomaticPackageResolution -onlyUsePackageVersionsFromResolvedFile
 actionlint
