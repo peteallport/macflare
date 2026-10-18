@@ -1,0 +1,19 @@
+# Created by Peter C. Allport
+# A small baseline; SwiftFormat owns whitespace and warnings remain advisory.
+included:
+  - macflare
+  - macflareTests
+  - macflareUITests
+excluded:
+  - .build
+  - DerivedData
+only_rules:
+  - duplicate_imports
+  - empty_count
+  - empty_string
+  - fatal_error_message
+  - force_cast
+  - force_try
+  - identical_operands
+  - unused_closure_parameter
+reporter: xcode

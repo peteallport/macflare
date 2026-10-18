@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# Created by Peter C. Allport
+# Inspect committed history as well as the index before uploading any refs.
+set -euo pipefail
+export GIT_OPTIONAL_LOCKS=0
+check_dir="$(mktemp -d "${TMPDIR:-/tmp}/macflare-pre-push.XXXXXX")"
+trap 'rm -rf -- "$check_dir"' EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
+git show HEAD:script/check-public-content.py > "$check_dir/check-public-content.py"
+python3 "$check_dir/check-public-content.py" --history
