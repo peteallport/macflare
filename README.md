@@ -1,8 +1,8 @@
 # macflare
 
-Power tools for Cloudflare natively on macOS.
+Power tools for Cloudflare natively on macOS. Coming very soon!
 
-Macflare is currently a prototype: it opens a welcome screen, and **Login with Cloudflare** is a placeholder with no authentication or API calls. The project includes a SwiftData model and local persistence, but no Cloudflare account management yet.
+Macflare is open source and currently in active development.
 
 ## 🚀 Getting started
 
