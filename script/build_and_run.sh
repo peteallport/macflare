@@ -55,10 +55,10 @@ case "$mode" in
     open -n "$app_bundle"
     sleep 2
     if [[ -z "$(app_pids)" ]]; then
-      echo "MacFlare did not remain running after launch." >&2
+      echo "Macflare did not remain running after launch." >&2
       exit 1
     fi
-    echo "MacFlare is running from $app_bundle"
+    echo "Macflare is running from $app_bundle"
     ;;
   run)
     open -n "$app_bundle"
