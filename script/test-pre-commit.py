@@ -196,7 +196,7 @@ def project_cases():
     data.pop('rootObject')
     cases.append(('missing root object', openstep(data), 'missing a valid rootObject'))
     cases.append(('invalid plist', '{ broken =', 'plist syntax validation'))
-    cases.append(('real MacFlare project', (REPOSITORY / PROJECT).read_text(), None))
+    cases.append(('real Macflare project', (REPOSITORY / PROJECT).read_text(), None))
     for name, content, error in cases:
         with fixture() as test:
             test.stage(PROJECT, content + '\n')

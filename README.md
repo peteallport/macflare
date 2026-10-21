@@ -37,6 +37,6 @@ Use short-lived feature branches and pull requests into `main`; there is no sepa
 
 ## 📄 License
 
-This project is licensed under [CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/).
+This project is licensed under the [MIT License](LICENSE).
 
-You’re free to use, modify, and share the code for non-commercial purposes with attribution. Commercial use requires explicit permission from the author.
+You’re free to use, modify, distribute, and sell the software, including for commercial purposes, provided you include the copyright and permission notices in all copies or substantial portions of the software.

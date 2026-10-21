@@ -27,4 +27,4 @@ Macflare is a native macOS prototype for Cloudflare power users. The welcome scr
 
 ## License
 
-Created by Peter C. Allport. Licensed under [CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/); commercial use requires permission from the author. See `LICENSE`.
+Created by Peter C. Allport. Licensed under the [MIT License](LICENSE), which permits commercial use, modification, and redistribution. Preserve the copyright and permission notices in all copies or substantial portions of the software.
