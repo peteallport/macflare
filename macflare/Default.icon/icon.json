@@ -242,6 +242,19 @@
       }
     },
     {
+      "blur-material-specializations" : [
+        {
+          "value" : 0.04
+        },
+        {
+          "appearance" : "dark",
+          "value" : 0.12
+        },
+        {
+          "appearance" : "tinted",
+          "value" : 0.12
+        }
+      ],
       "layers" : [
         {
           "fill-specializations" : [
@@ -252,11 +265,51 @@
               }
             }
           ],
+          "glass" : true,
           "image-name" : "00-Rear-Cloud.svg",
-          "name" : "00-Rear-Cloud"
+          "name" : "Rear cloud glass — Light",
+          "opacity-specializations" : [
+            {
+              "value" : 1
+            },
+            {
+              "appearance" : "dark",
+              "value" : 0
+            },
+            {
+              "appearance" : "tinted",
+              "value" : 0
+            }
+          ]
+        },
+        {
+          "fill-specializations" : [
+            {
+              "appearance" : "tinted",
+              "value" : {
+                "solid" : "extended-srgb:0.81569,0.81569,0.81569,1.00000"
+              }
+            }
+          ],
+          "glass" : true,
+          "image-name" : "00-Rear-Cloud-Dark.svg",
+          "name" : "Rear cloud glass — Dark and Mono",
+          "opacity-specializations" : [
+            {
+              "value" : 0
+            },
+            {
+              "appearance" : "dark",
+              "value" : 1
+            },
+            {
+              "appearance" : "tinted",
+              "value" : 1
+            }
+          ]
         }
       ],
-      "name" : "Background — small lower-left cloud",
+      "name" : "Rear — matching cloud glass",
       "opacity-specializations" : [
         {
           "value" : 0.85
@@ -283,9 +336,9 @@
         }
       ],
       "refractivity" : {
-        "depth" : 0,
-        "enabled" : false,
-        "strength" : 0
+        "depth" : 0.06,
+        "enabled" : true,
+        "strength" : 0.16
       },
       "shadow-specializations" : [
         {
@@ -312,7 +365,7 @@
       "specular" : "inside",
       "translucency" : {
         "enabled" : true,
-        "value" : 0.02
+        "value" : 0.08
       }
     }
   ],

@@ -22,7 +22,7 @@ The script builds Debug, launches the app, and checks that its process remains r
 ## 🛠️ Engineering baseline
 
 - Swift 6 language mode and complete strict concurrency checking for the app and tests.
-- The finalized S2 app icon uses native Icon Composer artwork and Xcode-generated compatibility images for older supported macOS releases. See [app icon maintenance](CONTRIBUTING.md#app-icon).
+- The updated Default app icon uses native Icon Composer artwork and Xcode-generated compatibility images for older supported macOS releases. See [app icon maintenance](CONTRIBUTING.md#app-icon).
 - Swift Package Manager with a tracked [`Package.resolved`](macflare.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved); Inject 1.5.2 is the sole third-party dependency and its integration is Debug-only.
 - In-memory SwiftData unit tests, a welcome-screen UI test, and regression tests for staged signing, SwiftFormat, and SwiftLint validation.
 - The [macOS workflow](.github/workflows/macos.yml) runs Debug tests, a universal Release build, and Periphery. [Public-content checks](.github/workflows/quality.yml) and [CodeQL](.github/workflows/codeql.yml) run on pull requests and `main`.

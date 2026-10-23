@@ -73,11 +73,11 @@ The [CI workflow](.github/workflows/macos.yml) runs staged-validation regression
 
 ## App icon
 
-[`macflare/macflare-S2.icon`](macflare/macflare-S2.icon) is the finalized revision 17 Icon Composer document, copied unchanged from the approved design delivery. It lives outside the asset catalog in the app's synchronized source folder, so Xcode includes it in the macOS target automatically. Both app configurations set `ASSETCATALOG_COMPILER_APPICON_NAME` to `macflare-S2`.
+[`macflare/Default.icon`](macflare/Default.icon) contains the updated **Default** Icon Composer document from the design collection delivered on 23 October 2026. All package contents are copied unchanged from `Icons/Default.icon`. It lives outside the asset catalog in the app's synchronized source folder, so Xcode includes it in the macOS target automatically. Both app configurations set `ASSETCATALOG_COMPILER_APPICON_NAME` to `Default`.
 
-Preserve the document's appearance and material settings, its six embedded SVGs, and the rear cloud's straight lower edge. Every group has a watchOS-only translation of 24 points right and 24 points up; these saved design settings do not add a watchOS target or change the macOS composition. The app and tests remain macOS 14.0+ only.
+Preserve the document's appearance and material settings, its seven embedded SVGs, and the rear cloud's straight lower edge. The rear cloud uses matching native glass properties and a separate softer Dark/Mono asset. Every group has a watchOS-only translation of 24 points right and 24 points up; these saved design settings do not add a watchOS target or change the macOS composition. The app and tests remain macOS 14.0+ only.
 
-Following [Apple's Icon Composer integration](https://developer.apple.com/documentation/xcode/creating-your-app-icon-using-icon-composer), the asset compiler produces native icon stacks and flattened compatibility images in `Assets.car`, plus `macflare-S2.icns`. It also supplies `CFBundleIconName` and `CFBundleIconFile`; do not add competing manual Info.plist entries or an empty `AppIcon` asset set. The generated compatibility images provide the fallback for macOS 14 and 15. Their system-rendered margins, shadows, and materials can differ from an Icon Composer preview export.
+Following [Apple's Icon Composer integration](https://developer.apple.com/documentation/xcode/creating-your-app-icon-using-icon-composer), the asset compiler produces native icon stacks and flattened compatibility images in `Assets.car`, plus `Default.icns`. It also supplies `CFBundleIconName` and `CFBundleIconFile`; do not add competing manual Info.plist entries or an empty `AppIcon` asset set. The generated compatibility images provide the fallback for macOS 14 and 15. Their system-rendered margins, shadows, and materials can differ from an Icon Composer preview export.
 
 Use Xcode 27 to build the approved Icon Composer 2 refractivity/specular settings. Supporting design exports are reference previews, not a second runtime icon source. When updating the icon, review the native document and generated fallback, build Debug and Release, and verify the running app's About panel and Dock icon. Inspect the built bundle's icon keys, `.icns`, and `Assets.car` renditions as well. A build on current macOS verifies packaging but does not establish runtime coverage on macOS 14 or 15.
 
@@ -110,7 +110,7 @@ macflare/
 ├── Model/             # SwiftData model
 ├── View/              # SwiftUI views and AppKit bridge
 ├── Assets.xcassets/   # App assets
-├── macflare-S2.icon/   # Approved native app icon and embedded SVGs
+├── Default.icon/      # Approved native app icon and embedded SVGs
 └── macflareApp.swift  # App entry and persistence container
 macflareTests/         # Swift Testing unit tests
 macflareUITests/       # XCTest UI tests
