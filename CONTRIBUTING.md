@@ -127,7 +127,7 @@ script/               # Build/run and hook checks
 
 Include a clear summary, relevant verification results, and screenshots for user-visible changes using the [PR template](.github/pull_request_template.md). Prefer focused changes and open completed work ready for review. Merging requires the maintainer's approval.
 
-This project is licensed under [CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/): non-commercial use with attribution; commercial use requires permission from the author.
+This project is licensed under the [MIT License](LICENSE), which permits commercial use, modification, and redistribution. Include the copyright and permission notices in all copies or substantial portions of the software.
 
 ## Quality and public-content policy
 

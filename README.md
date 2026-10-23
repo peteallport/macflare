@@ -1,8 +1,8 @@
 # macflare
 
-Power tools for Cloudflare natively on macOS.
+Power tools for Cloudflare natively on macOS. Coming very soon!
 
-Macflare is currently a prototype: it opens a welcome screen, and **Login with Cloudflare** is a placeholder with no authentication or API calls. The project includes a SwiftData model and local persistence, but no Cloudflare account management yet.
+Macflare is open source and currently in active development.
 
 ## 🚀 Getting started
 
@@ -38,6 +38,6 @@ Use short-lived feature branches and pull requests into `main`; there is no sepa
 
 ## 📄 License
 
-This project is licensed under [CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/).
+This project is licensed under the [MIT License](LICENSE).
 
-You’re free to use, modify, and share the code for non-commercial purposes with attribution. Commercial use requires explicit permission from the author.
+You’re free to use, modify, distribute, and sell the software, including for commercial purposes, provided you include the copyright and permission notices in all copies or substantial portions of the software.
