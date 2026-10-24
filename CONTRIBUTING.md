@@ -9,7 +9,7 @@ Macflare is a native macOS prototype. The welcome screen is implemented; the Clo
 | App and test deployment target | macOS 14.0 |
 | Supported destination | Mac; no iOS, iPadOS, or Mac Catalyst target |
 | Language | Swift 6 with complete strict concurrency checking |
-| Project/compiler floor | Xcode 16+ for the project format and Swift 6; older versions are not continuously tested |
+| App build requirement | Xcode 27 for the Icon Composer 2 artwork; Xcode 16 is no longer sufficient |
 | Local validation toolchain | Xcode 27.0 (27A266a), Swift 6.4 |
 | CI toolchain | Xcode 27.0 (27A266a) on GitHub-hosted `xcode-27` |
 
@@ -71,6 +71,16 @@ Unit tests use an in-memory SwiftData store and do not modify the app's persiste
 
 The [CI workflow](.github/workflows/macos.yml) runs staged-validation regressions, formatting, lint, and build/test checks in one fresh hosted Mac job. It builds Release for both Apple Silicon and Intel, cancels superseded runs, checks that the dependency lockfile remains unchanged, and keeps raw logs and `.xcresult` bundles off uploaded artifacts. It uses immutable commits for [checkout](https://github.com/actions/checkout/releases/tag/v7.0.1) and [artifact upload](https://github.com/actions/upload-artifact/releases/tag/v7.0.2); the existing Dependabot configuration proposes action updates.
 
+## App icon
+
+[`macflare/Default.icon`](macflare/Default.icon) contains the updated **Default** Icon Composer document from the design collection delivered on 23 October 2026. All package contents are copied unchanged from `Icons/Default.icon`. It lives outside the asset catalog in the app's synchronized source folder, so Xcode includes it in the macOS target automatically. Both app configurations set `ASSETCATALOG_COMPILER_APPICON_NAME` to `Default`.
+
+Preserve the document's appearance and material settings, its seven embedded SVGs, and the rear cloud's straight lower edge. The rear cloud uses matching native glass properties and a separate softer Dark/Mono asset. Every group has a watchOS-only translation of 24 points right and 24 points up; these saved design settings do not add a watchOS target or change the macOS composition. The app and tests remain macOS 14.0+ only.
+
+Following [Apple's Icon Composer integration](https://developer.apple.com/documentation/xcode/creating-your-app-icon-using-icon-composer), the asset compiler produces native icon stacks and flattened compatibility images in `Assets.car`, plus `Default.icns`. It also supplies `CFBundleIconName` and `CFBundleIconFile`; do not add competing manual Info.plist entries or an empty `AppIcon` asset set. The generated compatibility images provide the fallback for macOS 14 and 15. Their system-rendered margins, shadows, and materials can differ from an Icon Composer preview export.
+
+Use Xcode 27 to build the approved Icon Composer 2 refractivity/specular settings. Supporting design exports are reference previews, not a second runtime icon source. When updating the icon, review the native document and generated fallback, build Debug and Release, and verify the running app's About panel and Dock icon. Inspect the built bundle's icon keys, `.icns`, and `Assets.car` renditions as well. A build on current macOS verifies packaging but does not establish runtime coverage on macOS 14 or 15.
+
 ## Dependencies and hot reload
 
 Use Swift Package Manager for third-party dependencies. Commit [`macflare.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved`](macflare.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved) whenever intentionally changing a package version. Normal builds use the resolved versions and must not silently update them. The current pin is [Inject 1.5.2](https://github.com/krzysztofzablocki/Inject/tree/1.5.2).
@@ -100,6 +110,7 @@ macflare/
 ├── Model/             # SwiftData model
 ├── View/              # SwiftUI views and AppKit bridge
 ├── Assets.xcassets/   # App assets
+├── Default.icon/      # Approved native app icon and embedded SVGs
 └── macflareApp.swift  # App entry and persistence container
 macflareTests/         # Swift Testing unit tests
 macflareUITests/       # XCTest UI tests
@@ -164,8 +175,11 @@ protection and required CI are additional layers, not substitutes.
   separately from the Xcode 27 build/test/Periphery job. GitHub documents an
   [Xcode 27 / Swift 6.4 tracing incompatibility](https://github.com/github/codeql/issues/22742).
   This scans the source using the older supported toolchain; it does not establish
-  analysis of an Xcode 27 binary or future Swift 6.4-only source. Revisit the pin
-  when upstream adds support. CodeQL uses a clean, single-architecture Swift build
+  analysis of an Xcode 27 binary or future Swift 6.4-only source. Its analysis-only
+  build excludes the Icon Composer 2 document and clears the app-icon name because
+  the artwork requires Xcode 27; the main macOS job still compiles the full icon
+  in Debug and Release. Revisit the pin when upstream adds support. CodeQL uses a
+  clean, single-architecture Swift build
   with signing and compiler caches disabled. Compilation/extraction failures are
   failures, not clean security results. The security-extended suite reports findings;
   branch protection blocks high/critical security findings and error-level results.

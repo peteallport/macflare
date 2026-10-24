@@ -7,7 +7,7 @@ Macflare is open source and currently in active development.
 ## 🚀 Getting started
 
 - The app and tests target **macOS 14.0+** on Mac. iOS and iPadOS are possible future work, not supported build destinations.
-- Use **Xcode 27.0 (27A266a)**, matching development validation and CI. The project/compiler floor remains Xcode 16; see [toolchain details](CONTRIBUTING.md#toolchain-and-platforms).
+- Use **Xcode 27.0 (27A266a)**, matching the native Icon Composer 2 artwork, development validation, and CI; see [toolchain details](CONTRIBUTING.md#toolchain-and-platforms).
 - Local ad-hoc builds and tests do not require an Apple Developer account.
 
 ```bash
@@ -22,6 +22,7 @@ The script builds Debug, launches the app, and checks that its process remains r
 ## 🛠️ Engineering baseline
 
 - Swift 6 language mode and complete strict concurrency checking for the app and tests.
+- The updated Default app icon uses native Icon Composer artwork and Xcode-generated compatibility images for older supported macOS releases. See [app icon maintenance](CONTRIBUTING.md#app-icon).
 - Swift Package Manager with a tracked [`Package.resolved`](macflare.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved); Inject 1.5.2 is the sole third-party dependency and its integration is Debug-only.
 - In-memory SwiftData unit tests, a welcome-screen UI test, and regression tests for staged signing, SwiftFormat, and SwiftLint validation.
 - The [macOS workflow](.github/workflows/macos.yml) runs Debug tests, a universal Release build, and Periphery. [Public-content checks](.github/workflows/quality.yml) and [CodeQL](.github/workflows/codeql.yml) run on pull requests and `main`.

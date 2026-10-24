@@ -49,11 +49,14 @@ jobs:
           queries: security-extended
       - name: Build for analysis
         run: |
+          # Analyze Swift with CodeQL's supported compiler. The approved Icon
+          # Composer 2 artwork requires Xcode 27 and is built by macos.yml.
           xcodebuild build -project macflare.xcodeproj -scheme macflare \
             -configuration Debug -destination 'generic/platform=macOS' \
             -derivedDataPath "$RUNNER_TEMP/codeql-derived-data" \
             -disableAutomaticPackageResolution -onlyUsePackageVersionsFromResolvedFile \
             ARCHS=arm64 ONLY_ACTIVE_ARCH=YES CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO \
+            EXCLUDED_SOURCE_FILE_NAMES=Default.icon ASSETCATALOG_COMPILER_APPICON_NAME= \
             COMPILATION_CACHE_ENABLE_CACHING=NO SWIFT_ENABLE_COMPILE_CACHE=NO SWIFT_USE_INTEGRATED_DRIVER=NO
       - name: Analyze Swift
         uses: github/codeql-action/analyze@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee # v4
