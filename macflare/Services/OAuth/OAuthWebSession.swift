@@ -310,7 +310,7 @@ enum LoopbackOAuthCallback {
         guard request.utf8.count <= 8_192, request.contains("\r\n\r\n"),
               let redirect = URLComponents(string: redirectURI),
               redirect.scheme == "http", redirect.host == "127.0.0.1", let port = redirect.port,
-              (1...65_535).contains(port), redirect.user == nil, redirect.password == nil,
+              (1 ... 65_535).contains(port), redirect.user == nil, redirect.password == nil,
               redirect.query == nil, redirect.fragment == nil, !expectedState.isEmpty else {
             throw OAuthError.invalidCallbackURL
         }

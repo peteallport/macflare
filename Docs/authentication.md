@@ -23,7 +23,7 @@ The browser callback listener binds only `127.0.0.1`, opens the browser after bi
 
 ## Build and run
 
-Use `script/build_and_run.sh` or the Codex Run action. The script uses this worktree's own DerivedData and the private client in `Config/OAuthDevelopment.xcconfig`. It accepts an explicit client override and additional Xcode build arguments after the mode:
+Use `script/build_and_run.sh` or the Codex Run action. The script defaults to Debug, uses this worktree's own DerivedData and the private client in `Config/OAuthDevelopment.xcconfig`, and derives temporary ad-hoc entitlements without changing the project defaults. It accepts an explicit client override and additional Xcode build arguments after the mode:
 
 ```sh
 CLOUDFLARE_CLIENT_ID='<registered-public-client-id>' ./script/build_and_run.sh --verify
@@ -45,14 +45,23 @@ Use a local signing configuration suitable for the existing project entitlements
 
 The separate **MacFlare Production** client was created on October 17, 2026 with private visibility, Code response, Authorization Code + Refresh Token grants, None (PKCE) authentication, `account-settings.read offline_access`, and the same `http://127.0.0.1:8976/oauth/callback` redirect. Its non-secret public ID is in `Config/OAuthProduction.xcconfig`.
 
-Select the production configuration explicitly for Release builds:
+Select the production configuration explicitly for Release builds. To build and run locally with the temporary ad-hoc entitlements:
+
+```sh
+CONFIGURATION=Release \
+MACFLARE_OAUTH_CONFIG="$PWD/Config/OAuthProduction.xcconfig" \
+MACFLARE_DERIVED_DATA="$PWD/build/ProductionOAuth/ReleaseDerivedData" \
+./script/build_and_run.sh --verify
+```
+
+For a build with your own signing configuration:
 
 ```sh
 xcodebuild -project macflare.xcodeproj -scheme macflare -configuration Release \
   -xcconfig Config/OAuthProduction.xcconfig build
 ```
 
-The Debug run script selects the development configuration by default unless explicitly overridden as described above. Each client ID has a separate Keychain entry, so development refresh and sign-out cannot affect a production session. Legacy unscoped credentials are left untouched because their owning client is unknown.
+The run script selects the development client by default in either build configuration unless explicitly overridden as described above. `CONFIGURATION=Release` changes the build mode, not the OAuth client. Each client ID has a separate Keychain entry, so development refresh and sign-out cannot affect a production session. Legacy unscoped credentials are left untouched because their owning client is unknown.
 
 Production registration remains private. Public availability additionally requires a client URL, logo, app name, and DNS TXT publisher verification. Verify the intended publisher domain before submission: Cloudflare says the verified domain cannot be changed, and public visibility cannot revert to private. Live production authentication was verified on October 23, 2026 using a Debug build configured with the production registration; see the [verification record](authentication-verification.md#live-production-verification--october-23-2026). This does not establish distribution signing or notarization.
 

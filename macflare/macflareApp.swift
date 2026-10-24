@@ -5,11 +5,11 @@
 //  Created by Peter C. Allport on 6/24/25.
 //
 
-import SwiftUI
 import AppKit
-@_exported import Inject
+import SwiftUI
 
 @main
+@MainActor
 struct MacflareApp: App {
     @State private var authManager = CloudflareAuthManager()
 
@@ -19,6 +19,10 @@ struct MacflareApp: App {
                 .environment(authManager)
                 .background(Color.clear)
                 .task {
+                    // UI smoke tests inspect the signed-out screen without loading live credentials.
+                    #if DEBUG
+                    guard ProcessInfo.processInfo.environment["MACFLARE_UI_TESTING"] != "1" else { return }
+                    #endif
                     // Hosted unit tests inject their own session dependencies.
                     // Never restore the user's real credentials in the test host.
                     guard ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] == nil else { return }

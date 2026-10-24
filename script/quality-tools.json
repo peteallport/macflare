@@ -1,0 +1,41 @@
+{
+  "gitleaks": {
+    "darwin-arm64": {
+      "url": "https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_darwin_arm64.tar.gz",
+      "sha256": "b40ab0ae55c505963e365f271a8d3846efbc170aa17f2607f13df610a9aeb6a5"
+    },
+    "linux-x86_64": {
+      "url": "https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz",
+      "sha256": "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb"
+    }
+  },
+  "periphery": {
+    "darwin-arm64": {
+      "url": "https://github.com/peripheryapp/periphery/releases/download/3.8.0/periphery-3.8.0.zip",
+      "sha256": "07d4e286e31dd79164df39097e0b59f533c94badbe18158464a455ea88a166d7",
+      "companions": [
+        "libIndexStore.dylib"
+      ]
+    }
+  },
+  "actionlint": {
+    "darwin-arm64": {
+      "url": "https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_darwin_arm64.tar.gz",
+      "sha256": "aba9ced2dee8d27fecca3dc7feb1a7f9a52caefa1eb46f3271ea66b6e0e6953f"
+    },
+    "linux-x86_64": {
+      "url": "https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_linux_amd64.tar.gz",
+      "sha256": "8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8"
+    }
+  },
+  "zizmor": {
+    "darwin-arm64": {
+      "url": "https://github.com/zizmorcore/zizmor/releases/download/v1.31.1/zizmor-aarch64-apple-darwin.tar.gz",
+      "sha256": "ad5aa633cd56215b11e6c51d51f90c7e6b22904a75047d1215abbd422f61d698"
+    },
+    "linux-x86_64": {
+      "url": "https://github.com/zizmorcore/zizmor/releases/download/v1.31.1/zizmor-x86_64-unknown-linux-gnu.tar.gz",
+      "sha256": "d185f726bdaf92df78273217dfdd24ebcd6b0ef48cf3ce776ff5762b6e138c99"
+    }
+  }
+}

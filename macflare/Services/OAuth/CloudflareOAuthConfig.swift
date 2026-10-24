@@ -20,7 +20,6 @@ struct CloudflareOAuthConfig: Sendable {
     /// are not accepted. Request only account listing and refresh-token access.
     var scopes = ["account-settings.read", "offline_access"]
 
-    var callbackURLScheme: String { URL(string: redirectURI)?.scheme ?? "app.macflare" }
     var scopeString: String { scopes.joined(separator: " ") }
     var isConfigured: Bool { !clientID.isEmpty && !clientID.hasPrefix("$(") }
 

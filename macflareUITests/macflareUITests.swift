@@ -7,39 +7,34 @@
 
 import XCTest
 
-final class macflareUITests: XCTestCase {
-
+final class MacflareUITests: XCTestCase {
     override func setUpWithError() throws {
-        // Put setup code here. This method is called before the invocation of each test method in the class.
-
-        // In UI tests it is usually best to stop immediately when a failure occurs.
         continueAfterFailure = false
-
-        // In UI tests it’s important to set the initial state - such as interface orientation - required for your tests before they run. The setUp method is a good place to do this.
-    }
-
-    override func tearDownWithError() throws {
-        // Put teardown code here. This method is called after the invocation of each test method in the class.
     }
 
     @MainActor
-    func testExample() throws {
-        // UI tests must launch the application that they test.
+    func testWelcomeScreenAndSignInButton() throws {
+        #if DEBUG
         let app = XCUIApplication()
+        app.launchEnvironment["MACFLARE_UI_TESTING"] = "1"
+        app.launchArguments = ["-ApplePersistenceIgnoreState", "YES"]
         app.launch()
+        defer { app.terminate() }
 
-        let addButton = app.buttons["addItemButton"]
-        XCTAssertTrue(addButton.waitForExistence(timeout: 2))
-        addButton.tap()
+        let title = app.staticTexts["welcomeTitle"]
+        let subtitle = app.staticTexts["welcomeSubtitle"]
+        let signInButton = app.buttons["cloudflareSignInButton"]
+        XCTAssertTrue(title.waitForExistence(timeout: 5))
+        XCTAssertEqual(title.value as? String, "Macflare")
+        XCTAssertEqual(subtitle.value as? String, "Cloudflare for power users on macOS.")
+        XCTAssertTrue(signInButton.isEnabled)
+        XCTAssertTrue(signInButton.isHittable)
+        XCTAssertEqual(signInButton.label, "Sign in with Cloudflare")
 
-        // Basic smoke check passed if no crash occurs on tap
-    }
-
-    @MainActor
-    func testLaunchPerformance() throws {
-        // This measures how long it takes to launch your application.
-        measure(metrics: [XCTApplicationLaunchMetric()]) {
-            XCUIApplication().launch()
-        }
+        // Inspect the real action without opening a browser or changing a saved session.
+        XCTAssertEqual(app.state, .runningForeground)
+        #else
+        throw XCTSkip("This smoke test requires the Debug-only isolated launch mode.")
+        #endif
     }
 }

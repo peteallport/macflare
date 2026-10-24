@@ -11,11 +11,6 @@ struct CloudflareAccount: Decodable, Identifiable, Hashable, Sendable {
     let id: String
     let name: String
 
-    init(id: String, name: String) {
-        self.id = id
-        self.name = name
-    }
-
     private enum CodingKeys: String, CodingKey { case id, name }
 
     init(from decoder: Decoder) throws {
@@ -83,11 +78,6 @@ struct CloudflareAPIClient {
         return accounts
     }
 
-    @discardableResult
-    func verifyToken() async throws -> [String] {
-        try await loadAccounts().map(\.id)
-    }
-
     private static func isRejectedBearer(status: Int, data: Data) -> Bool {
         guard status == 403 else { return false }
         struct ErrorEnvelope: Decodable {
@@ -105,7 +95,7 @@ struct CloudflareAPIClient {
 
     private func get(_ url: URL) async throws -> Data {
         var bearer = try await tokenProvider()
-        for attempt in 0...1 {
+        for attempt in 0 ... 1 {
             try Task.checkCancellation()
             var request = URLRequest(url: url)
             request.timeoutInterval = 30
@@ -122,7 +112,7 @@ struct CloudflareAPIClient {
                 throw CloudflareAPIError.unauthorized
             }
             switch http.statusCode {
-            case 200..<300: return data
+            case 200 ..< 300: return data
             case 403: throw CloudflareAPIError.forbidden
             default: throw CloudflareAPIError.httpStatus(http.statusCode)
             }

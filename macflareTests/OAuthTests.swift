@@ -71,7 +71,9 @@ struct OAuthTests {
     }
 
     @Test func pkceVerifiersAreUnique() {
-        #expect(PKCE().codeVerifier != PKCE().codeVerifier)
+        let first = PKCE()
+        let second = PKCE()
+        #expect(first.codeVerifier != second.codeVerifier)
     }
 
     // MARK: - AuthToken

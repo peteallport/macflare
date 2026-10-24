@@ -186,7 +186,7 @@ final class CloudflareAuthManager {
             ])
             request.timeoutInterval = 15
             let (_, response) = try await urlSession.data(for: request)
-            guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
+            guard let http = response as? HTTPURLResponse, (200 ..< 300).contains(http.statusCode) else {
                 throw OAuthError.server("Cloudflare did not confirm session revocation.")
             }
         } catch {
@@ -400,7 +400,7 @@ final class CloudflareAuthManager {
         let request = formRequest(url: configuration.tokenEndpoint, parameters: parameters)
         let (data, response) = try await urlSession.data(for: request)
         guard let http = response as? HTTPURLResponse else { throw OAuthError.invalidTokenResponse }
-        guard (200..<300).contains(http.statusCode) else {
+        guard (200 ..< 300).contains(http.statusCode) else {
             struct TokenError: Decodable { let error: String? }
             let code = (try? JSONDecoder().decode(TokenError.self, from: data))?.error
             if code == "invalid_grant" { throw OAuthError.invalidGrant }

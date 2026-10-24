@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import os
 import Testing
 @testable import macflare
 
@@ -656,20 +657,35 @@ private actor OAuthTestServer {
     }
 }
 
-private final class OAuthStubProtocol: URLProtocol {
-    nonisolated(unsafe) static var server: OAuthTestServer?
-    private var responseTask: Task<Void, Never>?
+/// URLProtocol starts each instance once. Its request is captured before creating
+/// the sole response task, which alone delivers callbacks to the Foundation client.
+/// All mutable subclass state is lock-protected; the scripted server is an actor.
+/// This invariant permits transferring the protocol instance to that response task.
+private final class OAuthStubProtocol: URLProtocol, @unchecked Sendable {
+    private struct LoadingState {
+        var task: Task<Void, Never>?
+        var stopped = false
+    }
+
+    private static let serverStorage = OSAllocatedUnfairLock<OAuthTestServer?>(initialState: nil)
+    private let loadingState = OSAllocatedUnfairLock(initialState: LoadingState())
+
+    static var server: OAuthTestServer? {
+        get { serverStorage.withLock { $0 } }
+        set { serverStorage.withLock { $0 = newValue } }
+    }
 
     override static func canInit(with _: URLRequest) -> Bool { true }
     override static func canonicalRequest(for request: URLRequest) -> URLRequest { request }
 
     override func startLoading() {
+        let request = request
         let server = Self.server
-        responseTask = Task {
+        let responseTask = Task {
             do {
                 guard let server else { throw OAuthTestError.unexpectedRequest }
                 let stub = try await server.respond(to: request)
-                guard !Task.isCancelled else { return }
+                guard !Task.isCancelled, !loadingState.withLock({ $0.stopped }) else { return }
                 let response = HTTPURLResponse(url: request.url!, statusCode: stub.status,
                                                httpVersion: "HTTP/1.1",
                                                headerFields: ["Content-Type": "application/json"])!
@@ -677,10 +693,27 @@ private final class OAuthStubProtocol: URLProtocol {
                 client?.urlProtocol(self, didLoad: Data(stub.body.utf8))
                 client?.urlProtocolDidFinishLoading(self)
             } catch {
+                guard !Task.isCancelled, !loadingState.withLock({ $0.stopped }) else { return }
                 client?.urlProtocol(self, didFailWithError: error)
             }
         }
+        // stopLoading can run before the new task is installed. In that case
+        // cancel it immediately instead of losing the cancellation request.
+        let alreadyStopped = loadingState.withLock { state in
+            guard !state.stopped else { return true }
+            state.task = responseTask
+            return false
+        }
+        if alreadyStopped { responseTask.cancel() }
     }
 
-    override func stopLoading() { responseTask?.cancel() }
+    override func stopLoading() {
+        let task = loadingState.withLock { state in
+            state.stopped = true
+            let task = state.task
+            state.task = nil
+            return task
+        }
+        task?.cancel()
+    }
 }
