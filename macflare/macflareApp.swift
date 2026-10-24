@@ -6,40 +6,44 @@
 //
 
 import AppKit
-import SwiftData
 import SwiftUI
 
 @main
 @MainActor
 struct MacflareApp: App {
-    private let sharedModelContainer: ModelContainer = {
-        let schema = Schema([
-            Item.self,
-        ])
-        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
-
-        do {
-            return try ModelContainer(for: schema, configurations: [modelConfiguration])
-        } catch {
-            fatalError("Could not create ModelContainer: \(error)")
-        }
-    }()
+    @State private var authManager = CloudflareAuthManager()
 
     var body: some Scene {
         WindowGroup {
-            WelcomeView()
+            RootView()
+                .environment(authManager)
                 .background(Color.clear)
-                .onAppear {
-                    configureWindow()
+                .task {
+                    // UI smoke tests inspect the signed-out screen without loading live credentials.
+                    #if DEBUG
+                    guard ProcessInfo.processInfo.environment["MACFLARE_UI_TESTING"] != "1" else { return }
+                    #endif
+                    // Hosted unit tests inject their own session dependencies.
+                    // Never restore the user's real credentials in the test host.
+                    guard ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] == nil else { return }
+                    await authManager.restore()
                 }
+                .onAppear { configureWindow() }
         }
-        .modelContainer(sharedModelContainer)
         .windowStyle(.hiddenTitleBar)
         .windowToolbarStyle(.unifiedCompact(showsTitle: false))
         .windowResizability(.contentSize)
         .defaultSize(width: 600, height: 500)
         .commands {
             CommandGroup(replacing: .windowSize) {}
+            #if DEBUG
+            CommandMenu("Development") {
+                Button("Refresh Cloudflare Session") {
+                    Task { await authManager.loadAccounts(forceRefresh: true) }
+                }
+                .disabled(!authManager.state.isSignedIn || authManager.isLoadingAccounts)
+            }
+            #endif
         }
     }
 
