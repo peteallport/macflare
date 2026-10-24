@@ -33,13 +33,33 @@ Cloudflare returns invalid bearer credentials as HTTP 403 with error 9109 and me
 
 ## Production and remaining limits
 
-On October 17, 2026, the separate **MacFlare Production** registration was created with private visibility, the same loopback callback, Code response, Authorization Code + Refresh Token grants, None (PKCE), and `account-settings.read offline_access`. Its public client ID is recorded in `Config/OAuthProduction.xcconfig`; no client secret is used. Production live authentication has not been tested. Public publication still requires publisher-domain verification and app metadata.
+On October 17, 2026, the separate **MacFlare Production** registration was created with private visibility, the same loopback callback, Code response, Authorization Code + Refresh Token grants, None (PKCE), and `account-settings.read offline_access`. Its public client ID is recorded in `Config/OAuthProduction.xcconfig`; no client secret is used. Production live authentication was subsequently verified on October 23, as recorded below. Public publication still requires publisher-domain verification and app metadata.
 
 Release compilation with `-xcconfig Config/OAuthProduction.xcconfig` and signing disabled passed. The built Info.plist contains the production client ID, distinct from development. This confirms build configuration only.
 
 An optional command-line Swift 6 override failed in the existing Inject dependency's shared mutable state. This probe forces the dependency's language mode too and does not establish that the new auth source fails Swift 6. Dependency modernization remains outside this authentication change. The project's current-settings Debug/Release builds passed.
 
 The old template UI tests were not run; the focused suite is the `macflareTests` target. The live UI checks above were performed on the actual app. Signing overrides and the temporary entitlement file were used only for this isolated validation; distribution signing and notarization were not validated.
+
+## Live production verification — October 23, 2026
+
+Tested the isolated authentication worktree at app-source revision `ec7ea31dc9711b2d798880299768a09a0ac6770b`, matching the open PR #6 head, with the local launcher correction described below. The original checkout and its signing diff were preserved. No merge performed.
+
+The Debug app was built with `Config/OAuthProduction.xcconfig`, separate DerivedData, ad-hoc signing and a temporary sandbox/network-only entitlement file. The built `CloudflareClientID` was checked against the production configuration before consent. Debug was used to retain the command that forces a refresh grant; this was a live test of the production OAuth registration, not a distribution build.
+
+1. Cloudflare consent identified **MacFlare Production** and displayed exactly Account Settings Read and Background Access.
+2. Authorization returned through the loopback callback, and the actual app loaded the authorized account from Cloudflare.
+3. The accounts-screen **Refresh** action reloaded accounts without an error.
+4. **Development → Refresh Cloudflare Session** forced a real refresh grant, followed by successful account loading without a persistence notice.
+5. After quitting and reopening the same app bundle, a new app process restored the saved session and loaded the account.
+6. **Sign Out** cleared the visible account. No Keychain-deletion or revocation-failure notice appeared after 39 seconds, beyond the request's 15-second timeout. The app only accepts HTTP 2xx for revocation.
+7. Another quit/reopen remained signed out. The same production-configured local build was left at the sign-in screen for manual testing.
+
+No token values were read or replayed independently. Remote revocation evidence is the app's successful-response handling, not an independent replay test or browser logout. The existing 54-case automated result above was not rerun for this live check. Account names, account IDs, callback values, tokens and screenshots are excluded from this record and the repository.
+
+The preflight exposed a launcher configuration bug: its development xcconfig overrode the documented command-line client-ID override. The script now selects exactly one source, in order: explicit client ID, `MACFLARE_OAUTH_CONFIG`, or the default development xcconfig. The production-configured build and embedded-ID check passed after the correction; shell syntax validation also passed.
+
+After the Debug lifecycle check, a separate Release build using `Config/OAuthProduction.xcconfig` and the same temporary signing approach compiled and launched successfully. Its embedded client ID matched the production configuration, and the actual Release app restored the saved production session and displayed the account. The Debug-only refresh command was absent. Forced refresh and sign-out were verified in the production-configured Debug app above; they were not repeated in Release. This local Release run does not establish distribution signing or notarization.
 
 ## Reproduce
 

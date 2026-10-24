@@ -9,9 +9,12 @@ APP_BUNDLE="$DERIVED_DATA/Build/Products/Debug/macflare.app"
 # Stop only this worktree's app, preserving apps launched from other checkouts.
 pkill -f "^$APP_BUNDLE/Contents/MacOS/macflare" 2>/dev/null || true
 cd "$ROOT_DIR"
-CLIENT_ARGUMENTS=(-xcconfig "$ROOT_DIR/Config/OAuthDevelopment.xcconfig")
 if [[ -n "${CLOUDFLARE_CLIENT_ID:-}" ]]; then
-  CLIENT_ARGUMENTS+=("CLOUDFLARE_CLIENT_ID=$CLOUDFLARE_CLIENT_ID")
+  # An xcconfig takes precedence over command-line build settings, so an
+  # explicit ID must replace the default config rather than accompany it.
+  CLIENT_ARGUMENTS=("CLOUDFLARE_CLIENT_ID=$CLOUDFLARE_CLIENT_ID")
+else
+  CLIENT_ARGUMENTS=(-xcconfig "${MACFLARE_OAUTH_CONFIG:-$ROOT_DIR/Config/OAuthDevelopment.xcconfig}")
 fi
 xcodebuild -project macflare.xcodeproj -scheme macflare -configuration Debug \
   -destination 'platform=macOS' -derivedDataPath "$DERIVED_DATA" \

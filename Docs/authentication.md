@@ -2,6 +2,12 @@
 
 MacFlare uses a public OAuth client (PKCE S256, no client secret) to read Cloudflare accounts. Credentials are stored in Keychain. The accounts screen can reload accounts and sign out; sign-out clears local state before attempting remote refresh-token revocation.
 
+## Public client IDs and private credentials
+
+The client IDs in `Config/OAuthDevelopment.xcconfig` and `Config/OAuthProduction.xcconfig` are intentional public configuration. [RFC 6749 section 2.2](https://www.rfc-editor.org/rfc/rfc6749#section-2.2) defines a client ID as non-secret; it identifies the registration and cannot authenticate a client by itself. It is also embedded in the app and sent in the browser authorization request. Knowing this ID alone does not grant account access: the authorization-code exchange requires user authorization and the matching PKCE verifier, while refresh requires a valid refresh token.
+
+Cloudflare's **private visibility** means only members of the registration's parent account can authorize it. This is separate from the **public OAuth client** type used by native apps with PKCE and no client secret. Keep access tokens, refresh tokens, authorization codes, PKCE verifiers and signing credentials out of source control, logs and PR attachments.
+
 ## Register a development client
 
 Checked against Cloudflare's documentation and a live development-account dashboard on October 16, 2026:
@@ -23,6 +29,16 @@ Use `script/build_and_run.sh` or the Codex Run action. The script uses this work
 CLOUDFLARE_CLIENT_ID='<registered-public-client-id>' ./script/build_and_run.sh --verify
 ```
 
+To test the production registration locally while retaining the Debug refresh command:
+
+```sh
+MACFLARE_OAUTH_CONFIG="$PWD/Config/OAuthProduction.xcconfig" \
+MACFLARE_DERIVED_DATA="$PWD/build/ProductionOAuth/DerivedData" \
+./script/build_and_run.sh --verify
+```
+
+Selection order is an explicit `CLOUDFLARE_CLIENT_ID`, then `MACFLARE_OAUTH_CONFIG`, then the development configuration. An explicit ID omits the xcconfig because Xcode gives an xcconfig precedence over command-line build settings. Use `MACFLARE_OAUTH_CONFIG` rather than passing a second `-xcconfig` argument to the script.
+
 Use a local signing configuration suitable for the existing project entitlements. Passing signing overrides to Xcode does not require editing `project.pbxproj`. Debug/Release compilation does not prove registration, consent, Keychain access, API permissions, refresh, or revocation.
 
 ## Production registration
@@ -36,9 +52,9 @@ xcodebuild -project macflare.xcodeproj -scheme macflare -configuration Release \
   -xcconfig Config/OAuthProduction.xcconfig build
 ```
 
-The Debug run script continues to select the development configuration. Each client ID has a separate Keychain entry, so development refresh and sign-out cannot affect a production session. Legacy unscoped credentials are left untouched because their owning client is unknown.
+The Debug run script selects the development configuration by default unless explicitly overridden as described above. Each client ID has a separate Keychain entry, so development refresh and sign-out cannot affect a production session. Legacy unscoped credentials are left untouched because their owning client is unknown.
 
-Production registration remains private. Public availability additionally requires a client URL, logo, app name, and DNS TXT publisher verification. Verify the intended publisher domain before submission: Cloudflare says the verified domain cannot be changed, and public visibility cannot revert to private. Registration and build configuration do not establish live production authentication; that flow has not been tested.
+Production registration remains private. Public availability additionally requires a client URL, logo, app name, and DNS TXT publisher verification. Verify the intended publisher domain before submission: Cloudflare says the verified domain cannot be changed, and public visibility cannot revert to private. Live production authentication was verified on October 23, 2026 using a Debug build configured with the production registration; see the [verification record](authentication-verification.md#live-production-verification--october-23-2026). This does not establish distribution signing or notarization.
 
 ## Verification
 
