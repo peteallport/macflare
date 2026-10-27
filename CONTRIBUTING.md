@@ -132,8 +132,29 @@ This project is licensed under the [MIT License](LICENSE), which permits commerc
 ## Quality and public-content policy
 
 Work on short-lived branches from `main` and open a pull request back to `main`.
-The required checks apply to administrators too. Keep existing review requirements;
-never bypass a failing check or merge without the maintainer's approval.
+Every contributor change requires approval from `@peteallport`, the sole owner in
+[CODEOWNERS](.github/CODEOWNERS). Another contributor's approval does not replace
+that approval. This includes changes to workflows and to CODEOWNERS itself; GitHub
+uses the ownership rules on the PR's base branch. New reviewable changes dismiss
+previous approvals. Required checks must pass, the branch must be current with
+`main`, and review conversations must be resolved before a contributor can merge.
+
+Pete retains an administrator exception for ordinary direct pushes and his own
+pull requests. GitHub does not allow an author to approve their own pull request.
+This exception applies to the PR and quality rules, so owner pushes can reach
+`main` before CI finishes; CI still runs afterward. Contributors and GitHub Apps
+have no bypass. A separate rule blocks force pushes and deletion of `main` for
+everyone, including the owner. Keep the bypass limited to the sole administrator
+of this personal repository; reassess it before transferring the repository or
+changing administrator access. Coding agents must still pass the required checks and obtain Pete's explicit
+approval before merging a PR; the GitHub exception is not merge authorization.
+
+GitHub Actions requires approval before workflows from any external fork
+contributor run, including returning contributors. Approving a workflow run is
+separate from approving its PR. Actions must use full commit SHA pins. Review any new action and its pinned
+source before approving a workflow change. Keep default workflow permissions
+read-only and automated PR approvals disabled. Existing PR
+jobs receive no repository secrets and run on GitHub-hosted runners.
 
 Install checksum-pinned validation tools in a directory on your PATH:
 
