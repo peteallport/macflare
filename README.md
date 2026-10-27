@@ -37,7 +37,7 @@ This branch adds PKCE sign-in, account loading, session refresh, and sign-out. A
 ## ❤️ Support macflare
 
 - App Store distribution is planned.
-- Know a company hiring? [Meet the author](https://peteallport.com).
+- A project by [Peter C. Allport](https://peteallport.com), feel free to reach out!
 - Consider [sponsoring macflare](https://github.com/sponsors/peteallport).
 
 ## 📄 License
