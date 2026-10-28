@@ -1,6 +1,6 @@
 # macflare
 
-Macflare is a native macOS prototype for Cloudflare power users. The welcome screen is implemented, but the login button is a placeholder; authentication and Cloudflare API operations are not implemented.
+Macflare is a native macOS prototype for Cloudflare power users. It implements PKCE sign-in, read-only account loading, session refresh and sign-out. See `Docs/authentication.md` for registered-client setup and the distinction between build checks and live authentication.
 
 ## Development baseline
 
@@ -22,7 +22,7 @@ Macflare is a native macOS prototype for Cloudflare power users. The welcome scr
 - Prefer accessible SwiftUI views. Use AppKit for missing macOS integration and wrap it narrowly for SwiftUI.
 - Follow Apple's Human Interface Guidelines and Swift API Design Guidelines. Use clear names, focused functions, and documentation comments for public APIs or non-obvious behavior.
 - Keep the README and contributor guide aligned with actual behavior. Do not describe planned authentication, CloudKit, push, or file features as implemented.
-- Never log credentials or sensitive user data. Use Keychain for credentials when authentication is implemented; iCloud sync is not configured.
+- Never log credentials or sensitive user data. Authentication credentials are stored in Keychain; iCloud sync is not configured.
 - Use Context7 for current library/API documentation and primary-source web documentation when needed.
 
 ## License
