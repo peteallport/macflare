@@ -31,7 +31,7 @@ enum CloudflareAPIError: Error, LocalizedError, Equatable {
         case .unauthorized:
             return "Cloudflare rejected your session. Please sign in again."
         case .forbidden:
-            return "Cloudflare denied access to your accounts. Check the app's account.read permission and your account access, then retry."
+            return "Cloudflare denied access to your accounts. Check the app's Account Settings Read (account-settings.read) permission and your account access, then retry."
         case .httpStatus(let status):
             return "Cloudflare could not load your accounts (status \(status)). Please retry."
         case .invalidResponse:
@@ -53,6 +53,7 @@ struct CloudflareAPIClient {
     func loadAccounts() async throws -> [CloudflareAccount] {
         var accounts: [CloudflareAccount] = []
         var page = 1
+        var expectedTotalCount: Int?
         while true {
             var components = URLComponents(url: baseURL.appendingPathComponent("accounts"), resolvingAgainstBaseURL: false)!
             components.queryItems = [
@@ -69,8 +70,21 @@ struct CloudflareAPIClient {
             guard response.success != false, let result = response.result else {
                 throw CloudflareAPIError.invalidResponse
             }
+            if let returnedPage = response.resultInfo?.page, returnedPage != page {
+                throw CloudflareAPIError.invalidResponse
+            }
             accounts.append(contentsOf: result)
-            guard let totalPages = response.resultInfo?.totalPages, page < totalPages else { break }
+            if let totalCount = response.resultInfo?.totalCount {
+                guard totalCount >= 0 else { throw CloudflareAPIError.invalidResponse }
+                expectedTotalCount = totalCount
+            }
+            if let totalCount = expectedTotalCount {
+                if accounts.count >= totalCount { break }
+                guard !result.isEmpty else { throw CloudflareAPIError.invalidResponse }
+            } else if result.isEmpty {
+                // Pagination metadata is optional; an empty page ends the list.
+                break
+            }
             // Bound malformed pagination instead of looping forever.
             guard page < 1_000 else { throw CloudflareAPIError.invalidResponse }
             page += 1
@@ -123,8 +137,12 @@ struct CloudflareAPIClient {
 
 private struct AccountsResponse: Decodable {
     struct ResultInfo: Decodable {
-        let totalPages: Int?
-        enum CodingKeys: String, CodingKey { case totalPages = "total_pages" }
+        let page: Int?
+        let totalCount: Int?
+        enum CodingKeys: String, CodingKey {
+            case page
+            case totalCount = "total_count"
+        }
     }
     let success: Bool?
     let result: [CloudflareAccount]?

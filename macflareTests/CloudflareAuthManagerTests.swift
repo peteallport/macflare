@@ -289,7 +289,7 @@ struct CloudflareAuthManagerTests {
         let fixture = makeFixture(token: original, responses: [forbidden])
         await fixture.manager.restore()
         #expect(fixture.manager.state == .signedIn)
-        #expect(fixture.manager.accountError != nil)
+        #expect(fixture.manager.accountError?.contains("Account Settings Read (account-settings.read)") == true)
         #expect(fixture.store.token == original)
         #expect(fixture.store.deleteCount == 0)
         #expect(fixture.store.saveCount == 0)
@@ -331,18 +331,100 @@ struct CloudflareAuthManagerTests {
         #expect(fixture.manager.accounts.isEmpty)
     }
 
-    @Test func accountLoadingIncludesEveryPage() async {
-        let first = OAuthStubResponse(status: 200, body: #"{"success":true,"result":[{"id":"first","name":"First"}],"result_info":{"total_pages":2}}"#)
-        let second = OAuthStubResponse(status: 200, body: #"{"success":true,"result":[{"id":"second","name":"Second"}],"result_info":{"total_pages":2}}"#)
-        let fixture = makeFixture(token: token(), responses: [first, second])
+    @Test(arguments: [0, 1, 50, 51, 100])
+    private func accountLoadingIncludesEveryPage(accountCount: Int) async {
+        let responses = stride(from: 0, to: max(accountCount, 1), by: 50).map { offset in
+            let ids = (offset ..< min(offset + 50, accountCount)).map { "account-\($0)" }
+            return OAuthStubResponse.accountsPage(
+                ids: ids,
+                resultInfo: #"{"count":\#(ids.count),"page":\#(offset / 50 + 1),"per_page":50,"total_count":\#(accountCount)}"#
+            )
+        }
+        let fixture = makeFixture(token: token(), responses: responses)
         await fixture.manager.restore()
-        #expect(fixture.manager.accounts.map(\.id) == ["first", "second"])
+        #expect(fixture.manager.accounts.map(\.id) == (0 ..< accountCount).map { "account-\($0)" })
+        #expect(fixture.manager.accountError == nil)
         let requests = await fixture.server.requests
         let pages = requests.map {
             URLComponents(url: $0.url!, resolvingAgainstBaseURL: false)?.queryItems?
                 .first { $0.name == "page" }?.value
         }
-        #expect(pages == ["1", "2"])
+        #expect(pages == (1 ... responses.count).map(String.init))
+    }
+
+    @Test(arguments: [nil, #"{"count":1,"per_page":50}"#] as [String?])
+    private func missingPaginationTotalContinuesUntilEmptyPage(resultInfo: String?) async {
+        let first = OAuthStubResponse.accountsPage(ids: ["first"], resultInfo: resultInfo)
+        let second = OAuthStubResponse.accountsPage(ids: ["second"], resultInfo: resultInfo)
+        let empty = OAuthStubResponse.accountsPage(ids: [])
+        let fixture = makeFixture(token: token(), responses: [first, second, empty])
+        await fixture.manager.restore()
+        #expect(fixture.manager.accounts.map(\.id) == ["first", "second"])
+        #expect(fixture.manager.accountError == nil)
+        let requests = await fixture.server.requests
+        let pages = requests.map {
+            URLComponents(url: $0.url!, resolvingAgainstBaseURL: false)?.queryItems?
+                .first { $0.name == "page" }?.value
+        }
+        #expect(pages == ["1", "2", "3"])
+    }
+
+    @Test(arguments: [
+        #"{"page":1,"total_count":2}"#,
+        #"{"page":2,"total_count":-1}"#,
+    ])
+    private func malformedPaginationDoesNotPublishPartialAccounts(resultInfo: String) async {
+        let first = OAuthStubResponse.accountsPage(ids: ["first"], resultInfo: #"{"page":1,"total_count":2}"#)
+        let second = OAuthStubResponse.accountsPage(ids: ["second"], resultInfo: resultInfo)
+        let original = token()
+        let fixture = makeFixture(token: original, responses: [first, second])
+        await fixture.manager.restore()
+        #expect(fixture.manager.accounts.isEmpty)
+        #expect(fixture.manager.accountError == CloudflareAPIError.invalidResponse.localizedDescription)
+        #expect(fixture.store.token == original)
+        #expect(await fixture.server.requests.count == 2)
+    }
+
+    @Test func emptyPageBeforeTotalDoesNotPublishPartialAccounts() async {
+        let first = OAuthStubResponse.accountsPage(ids: ["first"], resultInfo: #"{"page":1,"total_count":2}"#)
+        let empty = OAuthStubResponse.accountsPage(ids: [], resultInfo: #"{"page":2,"total_count":2}"#)
+        let fixture = makeFixture(token: token(), responses: [first, empty])
+        await fixture.manager.restore()
+        #expect(fixture.manager.accounts.isEmpty)
+        #expect(fixture.manager.accountError == CloudflareAPIError.invalidResponse.localizedDescription)
+        #expect(await fixture.server.requests.count == 2)
+    }
+
+    @Test(arguments: [false, true])
+    private func missingLaterTotalPreservesAdvertisedAccountCount(emptyLastPage: Bool) async {
+        let firstIDs = (0 ..< 50).map { "account-\($0)" }
+        let first = OAuthStubResponse.accountsPage(
+            ids: firstIDs, resultInfo: #"{"count":50,"page":1,"per_page":50,"total_count":51}"#
+        )
+        let lastIDs = emptyLastPage ? [] : ["account-50"]
+        let second = OAuthStubResponse.accountsPage(ids: lastIDs, resultInfo: #"{"page":2}"#)
+        let fixture = makeFixture(token: token(), responses: [first, second])
+        await fixture.manager.restore()
+        if emptyLastPage {
+            #expect(fixture.manager.accounts.isEmpty)
+            #expect(fixture.manager.accountError == CloudflareAPIError.invalidResponse.localizedDescription)
+        } else {
+            #expect(fixture.manager.accounts.map(\.id) == firstIDs + lastIDs)
+            #expect(fixture.manager.accountError == nil)
+        }
+        #expect(await fixture.server.requests.count == 2)
+    }
+
+    @Test func laterPageFailurePreservesPreviouslyLoadedAccounts() async {
+        let first = OAuthStubResponse.accountsPage(ids: ["new-first"], resultInfo: #"{"page":1,"total_count":2}"#)
+        let unavailable = OAuthStubResponse(status: 503, body: "")
+        let fixture = makeFixture(token: token(), responses: [.accounts, first, unavailable])
+        await fixture.manager.restore()
+        await fixture.manager.loadAccounts()
+        #expect(fixture.manager.accounts.map(\.id) == ["account-one", "account-two"])
+        #expect(fixture.manager.accountError == CloudflareAPIError.httpStatus(503).localizedDescription)
+        #expect(fixture.manager.state == .signedIn)
+        #expect(await fixture.server.requests.count == 3)
     }
 
     @Test func signOutClearsAccountsAndRevokesRefreshToken() async throws {
@@ -585,8 +667,14 @@ private struct OAuthStubResponse: Sendable {
 
     static let accounts = OAuthStubResponse(
         status: 200,
-        body: #"{"success":true,"result":[{"id":"account-one","name":"Personal"},{"id":"account-two","name":"Work"}],"errors":[],"messages":[]}"#
+        body: #"{"success":true,"result":[{"id":"account-one","name":"Personal"},{"id":"account-two","name":"Work"}],"result_info":{"count":2,"page":1,"per_page":50,"total_count":2},"errors":[],"messages":[]}"#
     )
+
+    static func accountsPage(ids: [String], resultInfo: String? = nil) -> OAuthStubResponse {
+        let accounts = ids.map { #"{"id":"\#($0)","name":"Test account"}"# }.joined(separator: ",")
+        let metadata = resultInfo.map { #", "result_info":\#($0)"# } ?? ""
+        return OAuthStubResponse(status: 200, body: #"{"success":true,"result":[\#(accounts)]\#(metadata)}"#)
+    }
     static let refreshed = OAuthStubResponse(
         status: 200,
         body: #"{"access_token":"new-access","refresh_token":"new-refresh","token_type":"Bearer","scope":"account-settings.read offline_access","expires_in":3600}"#
