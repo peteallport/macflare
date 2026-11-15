@@ -1,6 +1,6 @@
 # Contributing to macflare
 
-Macflare is a native macOS prototype. The welcome screen is implemented; the Cloudflare login button has no action yet. Keep documentation aligned with working features.
+Macflare is a native macOS prototype with PKCE sign-in, read-only account loading, session refresh and sign-out. See [authentication setup and verification](Docs/authentication.md) for registered clients and live-test evidence. Keep documentation aligned with working features.
 
 ## Toolchain and platforms
 
@@ -40,6 +40,8 @@ CONFIGURATION=Release ./script/build_and_run.sh --verify
 
 The script defaults to Debug and uses the ad-hoc entitlement copy described below. `--verify` checks that the launched process remains running; it does not execute tests or establish that login works.
 
+The development OAuth client is the default in either build configuration. Select the production client explicitly with `MACFLARE_OAUTH_CONFIG="$PWD/Config/OAuthProduction.xcconfig"`; `CONFIGURATION=Release` selects the build mode only. `MACFLARE_DERIVED_DATA` can keep each local build separate, and additional Xcode build arguments follow the script's mode.
+
 Use these commands to run the Debug unit/UI tests and build Release with ad-hoc signing. The generated entitlement copies omit only push/iCloud claims that require provisioning, while retaining sandbox, file, network, and configuration-specific hot reload permissions. No Apple Developer account, provisioning profile, or signing certificate is needed for these checks; they do not validate provisioned cloud/push behavior:
 
 ```bash
@@ -67,7 +69,7 @@ swiftlint lint --quiet --no-cache
 python3 -B -u script/test-pre-commit.py
 ```
 
-Unit tests use an in-memory SwiftData store and do not modify the app's persistent store. UI tests launch the actual app and verify the welcome screen and placeholder login control. The UI test host needs an active macOS graphical session; XCTest may request automation permission on a developer Mac.
+Unit tests use injected authentication dependencies and an in-memory SwiftData store. The welcome-screen UI test disables saved-session restoration in its Debug app process and checks the real sign-in control without opening Cloudflare or accessing the user's credentials. Live OAuth verification is recorded separately in `Docs/authentication-verification.md`. The UI test host needs an active macOS graphical session; XCTest may request automation permission on a developer Mac.
 
 The [CI workflow](.github/workflows/macos.yml) runs staged-validation regressions, formatting, lint, and build/test checks in one fresh hosted Mac job. It builds Release for both Apple Silicon and Intel, cancels superseded runs, checks that the dependency lockfile remains unchanged, and keeps raw logs and `.xcresult` bundles off uploaded artifacts. It uses immutable commits for [checkout](https://github.com/actions/checkout/releases/tag/v7.0.1) and [artifact upload](https://github.com/actions/upload-artifact/releases/tag/v7.0.2); the existing Dependabot configuration proposes action updates.
 

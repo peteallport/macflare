@@ -1,0 +1,4 @@
+// Created by Peter C. Allport on 10/17/26.
+// Public identifier for the private MacFlare Production registration.
+// PKCE uses no client secret. Never put access or refresh tokens here.
+CLOUDFLARE_CLIENT_ID = 502a96a84380d7eeeacd3ef2279e2e96

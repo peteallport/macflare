@@ -5,8 +5,8 @@
 //  Created by Peter C. Allport on 6/24/25.
 //
 
-import SwiftUI
 import AppKit
+import SwiftUI
 #if DEBUG
 import Inject
 #endif
@@ -28,6 +28,7 @@ struct WelcomeView: View {
 #if DEBUG
     @Inject.ObserveInjection var inject
 #endif
+    @Environment(CloudflareAuthManager.self) private var authManager
 
     var body: some View {
         VStack(spacing: 40) {
@@ -60,10 +61,44 @@ struct WelcomeView: View {
 
             // Action Buttons
             VStack(spacing: 16) {
-                Button("Login with Cloudflare") {
-                    // Authentication is not implemented in this prototype yet.
+                Button {
+                    Task { await authManager.signIn() }
+                } label: {
+                    if authManager.state.isAuthenticating {
+                        ProgressView()
+                            .controlSize(.small)
+                    } else {
+                        Text("Sign in with Cloudflare")
+                    }
                 }
-                .accessibilityIdentifier("cloudflareLoginButton")
+                .disabled(authManager.state.isAuthenticating)
+                .accessibilityIdentifier("cloudflareSignInButton")
+
+                if authManager.state.isAuthenticating {
+                    Button("Cancel") { Task { await authManager.signOut() } }
+                        .accessibilityIdentifier("cancelSignInButton")
+                }
+                if authManager.canRetrySession {
+                    Button("Retry Session") { Task { await authManager.retry() } }
+                        .accessibilityIdentifier("retrySessionButton")
+                    Button("Sign Out") { Task { await authManager.signOut() } }
+                }
+
+                if authManager.canRetrySignOut {
+                    Button("Remove Saved Session") { Task { await authManager.signOut() } }
+                        .accessibilityIdentifier("removeSavedSessionButton")
+                }
+                if let notice = authManager.sessionNotice {
+                    Text(notice).font(.footnote).foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+
+                if let message = authManager.state.failureMessage {
+                    Text(message)
+                        .font(.footnote)
+                        .foregroundStyle(.red)
+                        .multilineTextAlignment(.center)
+                }
             }
             .padding(.horizontal, 20)
 
@@ -83,4 +118,5 @@ struct WelcomeView: View {
 
 #Preview {
     WelcomeView()
+        .environment(CloudflareAuthManager())
 }

@@ -30,6 +30,10 @@ The script builds Debug, launches the app, and checks that its process remains r
 
 Use short-lived feature branches and pull requests into `main`; there is no separate integration branch. See [quality and public-content policy](CONTRIBUTING.md#quality-and-public-content-policy).
 
+## Cloudflare sign-in
+
+This branch adds PKCE sign-in, account loading, session refresh, and sign-out. A registered Cloudflare public client ID is required. See [authentication setup and verification](Docs/authentication.md). Automated tests use injected responses; successful compilation alone does not verify live authentication.
+
 ## ❤️ Support macflare
 
 - App Store distribution is planned.

@@ -1,0 +1,4 @@
+// Created by Peter C. Allport on 10/16/26.
+// Public identifier for the private MacFlare Development registration.
+// This is not an access token or secret. Production must use its own client ID.
+CLOUDFLARE_CLIENT_ID = f7c5d38ce7449d302ff8255b7394c99c
