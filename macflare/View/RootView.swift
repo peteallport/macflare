@@ -2,6 +2,8 @@
 //  RootView.swift
 //  macflare
 //
+//  Created by Peter C. Allport on 6/3/26.
+//
 //  Switches between the welcome/login screen and the main content based on
 //  authentication state.
 //

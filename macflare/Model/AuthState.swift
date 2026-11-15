@@ -2,6 +2,8 @@
 //  AuthState.swift
 //  macflare
 //
+//  Created by Peter C. Allport on 6/3/26.
+//
 //  High-level authentication state that drives root navigation.
 //
 

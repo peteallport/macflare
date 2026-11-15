@@ -2,6 +2,8 @@
 //  CloudflareOAuthConfig.swift
 //  macflare
 //
+//  Created by Peter C. Allport on 6/3/26.
+//
 //  Configuration for Cloudflare's public OAuth client flow.
 //
 

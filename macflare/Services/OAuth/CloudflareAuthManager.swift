@@ -2,6 +2,8 @@
 //  CloudflareAuthManager.swift
 //  macflare
 //
+//  Created by Peter C. Allport on 6/3/26.
+//
 //  Coordinates the full Cloudflare OAuth lifecycle.
 //
 

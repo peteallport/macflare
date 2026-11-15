@@ -2,6 +2,8 @@
 //  KeychainStore.swift
 //  macflare
 //
+//  Created by Peter C. Allport on 6/3/26.
+//
 //  Secure persistence for the OAuth token using the macOS Keychain.
 //
 

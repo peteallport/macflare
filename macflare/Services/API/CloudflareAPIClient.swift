@@ -2,6 +2,8 @@
 //  CloudflareAPIClient.swift
 //  macflare
 //
+//  Created by Peter C. Allport on 6/3/26.
+//
 //  Thin REST client that injects the OAuth bearer token.
 //
 

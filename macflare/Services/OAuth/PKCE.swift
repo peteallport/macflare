@@ -2,6 +2,8 @@
 //  PKCE.swift
 //  macflare
 //
+//  Created by Peter C. Allport on 6/3/26.
+//
 //  Proof Key for Code Exchange (RFC 7636) helpers for the OAuth flow.
 //
 

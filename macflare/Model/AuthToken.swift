@@ -2,6 +2,8 @@
 //  AuthToken.swift
 //  macflare
 //
+//  Created by Peter C. Allport on 6/3/26.
+//
 //  OAuth token set returned by Cloudflare's token endpoint.
 //
 
